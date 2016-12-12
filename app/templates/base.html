@@ -1,0 +1,145 @@
+{% extends "bootstrap/base.html" %}
+
+{% block title %}Mario{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico',v=2) }}" type="image/x-icon">
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+<!-- MetisMenu CSS -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/metisMenu.min.css') }}">
+<!-- sb-admin-2 custom css -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sb-admin-2.css') }}">
+<!-- Morris Charts CSS -->
+<!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/morris.css') }}"> -->
+<!-- Custom fonts -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome.min.css') }}">
+{% endblock %}
+
+{% block body %}
+<div id="wrapper">
+            <!-- Navigation -->
+        <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="{{ url_for('main.index') }}">Mario</a>
+            </div>
+            <!-- /.navbar-header -->
+
+            <div class="navbar-default sidebar" role="navigation">
+                <div class="sidebar-nav navbar-collapse">
+                    <ul class="nav" id="side-menu">
+                        <li>
+                            <a href="{{ url_for('main.index', _external=True) }}"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
+                        </li>
+                        <li>
+                            <!-- 基于bootstrap collapse 实现 -->
+                            <!-- <a data-toggle="collapse" href="#collapseList"><i class="fa fa-folder fa-fw"></i> Benchmarks<span class="fa arrow"></span></a> -->
+                            <!-- <ul id="collapseList" class="nav nav-second-level collapse" aria-expanded="true"> -->
+                            <a href="#"><i class="fa fa-folder fa-fw"></i> Benchmarks<span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level">
+                                <!-- 这些列表打开应该是模态框而不是html页面 -->
+                                <li>
+                                    <a href="#" data-toggle="modal" data-target="#cpuTest">CPU TEST</a>
+                                </li>
+                                <li>
+                                    <a href="#" data-toggle="modal" data-target="#memTest">MEM TEST</a>
+                                </li>
+                                <li>
+                                    <a href="#" data-toggle="modal" data-target="#ioTest">I/O TEST</a>
+                                </li>
+                                <li>
+                                    <a href="#" data-toggle="modal" data-target="#netTest">NET TEST</a>
+                                </li>
+                                <li>
+                                    <a href="#" data-toggle="modal" data-target="#junoTest">JUNO TEST</a>
+                                </li>
+                            </ul>
+                            <!-- /.nav-second-level -->
+                        </li>
+                        <li>
+                            <a href="custom.html"><i class="fa fa-edit fa-fw"></i> Custom Test</a>
+                        </li>
+                        <li>
+                            <a href="result.html"><i class="fa fa-bar-chart-o fa-fw"></i> Results</a>
+                        </li>
+                        <li>
+                            <a href="template.html"><i class="fa fa-file fa-fw"></i> Templates</a>
+                        </li>
+                    </ul>
+                </div>
+                <!-- /.sidebar-collapse -->
+            </div>
+            <!-- /.navbar-static-side -->
+        </nav>
+
+</div>
+
+{% block main_page %}
+<div id="page-wrapper">
+     <div class="row">
+        <div class="col-lg-12">
+            <h1 class="page-header">{% block page_header %}Dashboard{% endblock %}</h1>
+        </div>
+        <!-- /.col-lg-12 -->
+    </div>
+    <!-- /.row -->
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            {% if category == "error" %}
+            <div class="alert alert-danger alert-dismissable">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                {{ message }}
+            </div>
+            {% endif %}
+            {% if category == "info" %}
+            <div class="alert alert-success alert-dismissable">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                {{ message }}
+            </div>
+            {% endif %}
+        {% endfor %}
+        {% block page_content %}{% endblock %}
+</div>
+{% endblock %}
+
+<div class="modal fade" id="cpuTest" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">选取测试物理机</h4>
+            </div>
+            <div class="modal-body">在这里添加一些文本</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary">提交更改</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal -->
+</div>
+
+{% block scripts %}
+{{ super() }}
+<!-- Metis Menu Plugin JavaScript -->
+<script type="text/javascript" src="{{ url_for('static', filename='js/metisMenu.min.js') }}"></script>
+
+<!-- Morris Charts JavaScript -->
+<!-- <script type="text/javascript" src="{{ url_for('static', filename='js/raphael.min.js') }}"></script> -->
+<!-- <script type="text/javascript" src="{{ url_for('static', filename='js/morris.min.js') }}"></script> -->
+<!-- <script type="text/javascript" src="{{ url_for('static', filename='js/morris-data.js') }}"></script> -->
+
+<!-- Custom Theme JavaScript -->
+<script type="text/javascript" src="{{ url_for('static', filename='js/sb-admin-2.js') }}"></script>
+<script type="text/javascript">
+    $SCRIPT_ROOT={{ request.script_root|tojson|safe }};
+</script>
+{% endblock %}
+
+{% endblock %}
