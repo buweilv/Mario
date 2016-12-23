@@ -4,6 +4,7 @@
 {% block head %}
 {{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/jquery.dataTables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dataTables.checkboxes.css') }}">
 {% endblock %}
 
 {% block page_header %}Dashboard{% endblock %}
@@ -20,27 +21,54 @@
         <div class="panel-body">
             <div class="row">
                    <div class="col-sm-12">
-                        <table width="100%" class="display" id="dataTables-example">
+                       <p class="form-group">
+                           <button type="button" id="cpu-btn" class="btn btn-primary">CPU Test</button>
+                           <button type="button" id="mem-btn" class="btn btn-primary">Mem Test</button>
+                           <button type="button" id="io-btn" class="btn btn-primary">I/O Test</button>
+                           <button type="button" id="network-btn" class="btn btn-primary">Net Test</button>
+                           <button type="button" id="delhost-btn" class="btn btn-danger"><i class="fa fa-minus-circle fa-fw"></i>&nbsp Del Host</button>
+                           <button type="button" id="addhost-btn" class="btn btn-success" data-toggle="collapse" data-target="#add-panel">
+                               <i class="fa fa-plus-square fa-fw"></i>&nbsp Add Host</button>
+                       </p>
+                       <div id="add-panel" class="collapse panel panel-info">
+                           <div class="panel-heading">Add Host</div>
+                                <div class="panel-body">
+                                   <form id="add-host-form" class="form-inline" autocomplete="off">
+                                       <div class="form-group">
+                                           <label for="ip-addr">IP</label>
+                                           <input class="form-control" type="text" id="ip-addr" autocomplete="off">
+                                       </div>
+                                       <div class="form-group">
+                                           <label for="passwd">Passwd</label>
+                                           <input class="form-control" type="password" id="passwd" autocomplete="off">
+                                       </div>
+                                       <button type="submit" class="btn btn-primary">Submit</button>
+                                   </form>
+                                </div>
+                                <!-- /.panel-body -->
+                       </div>
+                       <!-- /.panel -->
+                        <table width="100%" class="display" id="dataTables-hosts">
                             <thead>
                             <tr>
+                                <th></th>
                                 <th>IP Address</th>
                                 <th>Status</th>
-                                <th>Del</th>
                             </tr>
                             </thead>
                             <tbody>
                             <!-- for -->
                             {% for host in hosts %}
-                            <tr class="gradeA odd" role="row">
+                            <tr id= {{ host.id }} class="gradeA odd" role="row">
+                                <td>{{ host.id }}</td>
                                 <td>{{ host.IP }}</td>
                                 <td>{{ host.status }}</td>
-                                <td>
-                                    <button type="button" class="btn btn-danger">Del</button>
-                                </td>
                             </tr>
                             {% endfor %}
                             </tbody>
                         </table>
+                       <form id="form-hosts">
+                       </form>
                     </div>
             </div>
         </div>
@@ -57,5 +85,6 @@
 {{ super() }}
 <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/jquery.dataTables.js') }}"></script>
 <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/dataTable.js') }}"></script>
+<script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/dataTables.checkboxes.js') }}"></script>
 {% endblock %}
 

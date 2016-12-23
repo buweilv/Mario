@@ -1,10 +1,11 @@
-from flask import render_template, flash, redirect, url_for
+from flask import render_template, flash, redirect, url_for, request, jsonify
 from .. import  db
 from ..models import Host
 from . import main
 from .forms import HostForm
 import paramiko
 from paramiko.client import SSHClient
+from sqlalchemy.exc import IntegrityError
 
 
 @main.route('/', methods=['GET', 'POST'])
@@ -29,3 +30,16 @@ def index():
             return redirect(url_for('main.index'))
     return render_template('dashboard.html', form=host_form, hosts=all_hosts)
 
+
+@main.route('/_del_hosts', methods=['post'])
+def del_host():
+    print request.form.items()
+    for item in request.form.items():
+        dl_host = Host.query.filter_by(id=item[1]).first()
+        db.session.delete(dl_host)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'ok': False})
+    return jsonify({'ok': True})
