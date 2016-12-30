@@ -1,4 +1,4 @@
-from flask import render_template, flash, redirect, url_for, request, jsonify
+from flask import render_template, redirect, url_for, request, jsonify
 from .. import  db
 from ..models import Host
 from . import main
@@ -6,34 +6,18 @@ from .forms import HostForm
 import paramiko
 from paramiko.client import SSHClient
 from sqlalchemy.exc import IntegrityError
+import socket
 
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
-    host_form = HostForm()
     all_hosts = Host.query.all()
-    if host_form.validate_on_submit():
-        client = SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        try:
-            client.connect(username="root", password=host_form.passwd.data, hostname=host_form.IP.data)
-            flash('Authentication Success!', 'info')
-            host = Host.query.filter_by(IP=host_form.IP.data).first()
-            if host is None:
-                host = Host(IP=host_form.IP.data, password=host_form.passwd.data, status="managed")
-                db.session.add(host)
-            else:
-                flash('This Host has already added!', 'info')
-            return redirect(url_for("main.index"))
-        except paramiko.AuthenticationException:
-            flash('Authentication Failed, Please Check Your Host Information!', 'error')
-            return redirect(url_for('main.index'))
-    return render_template('dashboard.html', form=host_form, hosts=all_hosts)
+    return render_template('dashboard.html', hosts=all_hosts)
 
 
-@main.route('/_del_hosts', methods=['post'])
-def del_host():
-    print request.form.items()
+@main.route('/_del_hosts', methods=['POST'])
+def del_hosts():
+    print request.form.items()  # debug info: print the to be deleted hosts
     for item in request.form.items():
         dl_host = Host.query.filter_by(id=item[1]).first()
         db.session.delete(dl_host)
@@ -43,3 +27,42 @@ def del_host():
         db.session.rollback()
         return jsonify({'ok': False})
     return jsonify({'ok': True})
+
+
+@main.route('/_add_host', methods=['POST'])
+def add_host():
+    ip = request.form.get('ip')
+    passwd = request.form.get('passwd')
+    print ip, passwd # debug info: print the host and passwd info
+    if ip and passwd:
+        host = Host.query.filter_by(IP=ip).first()
+        if not host:
+            """
+            validate the IP and password is correct
+            """
+            client = SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            try:
+                client.connect(username="root", password=passwd, hostname=ip)
+                ad_host = Host(IP=ip, password=passwd, status="managed")
+                db.session.add(ad_host)
+                db.session.commit()
+            except socket.gaierror:
+                return jsonify({'input_ok': 'invalid hostname'})
+            except paramiko.AuthenticationException:
+                return jsonify({'input_ok': 'auth failed'})
+            except paramiko.ssh_exception.NoValidConnectionsError:
+                return jsonify({'input_ok': 'check the machine if ready'})
+            except IntegrityError:
+                db.session.rollback()
+                return jsonify({'input_ok': 'database failed'})
+            sd_host = Host.query.filter_by(IP=ip).first()
+            return jsonify({'input_ok': 'host added success',
+                            'id': sd_host.id,
+                            'IP': sd_host.IP,
+                            'status': sd_host.status})
+        else:
+            return jsonify({'input_ok': 'host already added'})
+    else:
+        return jsonify({'input_ok': 'empty field'})
+

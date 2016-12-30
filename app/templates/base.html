@@ -89,20 +89,7 @@
         <!-- /.col-lg-12 -->
     </div>
     <!-- /.row -->
-        {% for category, message in get_flashed_messages(with_categories=true) %}
-            {% if category == "error" %}
-            <div class="alert alert-danger alert-dismissable">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                {{ message }}
-            </div>
-            {% endif %}
-            {% if category == "info" %}
-            <div class="alert alert-success alert-dismissable">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                {{ message }}
-            </div>
-            {% endif %}
-        {% endfor %}
+    <div id='notification'></div>
         {% block page_content %}{% endblock %}
 </div>
 {% endblock %}

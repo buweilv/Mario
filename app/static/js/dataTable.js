@@ -16,7 +16,59 @@ $(document).ready(function(){
         'order': [[1, 'asc']]
     });
 
-    // modify datatable-checkboxes plugin --> show selected items num correctly
+    $.func = {
+        notification: function(info, text) {
+            var nof = document.createElement('div');
+            nof.setAttribute('class','alert alert-dismissable ' + info);
+            nof.innerHTML = '<button type="button" class="close" data-dismiss="alert">&times;</button>' + text;
+            $('#notification').append(nof);
+        }
+    }
+    $("#addhost-btn").click(function(){
+        console.log('send to /_add_host')
+        $.ajax($SCRIPT_ROOT + '/_add_host', {
+            //method: 'get',
+            method: 'post',
+      //      data: {
+      //          ip: $('#ip-addr').val(),
+      //          passwd: $('#passwd').val()
+      //      },
+            data: $('#add-host-form').serialize(),
+            dataType: 'json'
+            }).done(function(data){
+                if (data.input_ok === 'invalid hostname') {
+                    $.func.notification('alert-danger', 'invalid hostname');
+                    console.log('invalid hostname.');
+                } else if (data.input_ok === 'auth failed'){
+                    $.func.notification('alert-danger', 'auth fialed');
+                    console.log('auth failed.');
+                } else if (data.input_ok === 'database failed'){
+                    $.func.notification('alert-danger', 'database failed');
+                    console.log('database failed.');
+                } else if (data.input_ok === 'host already added'){
+                    $.func.notification('alert-danger', 'Host Already added');
+                    console.log('host already added.');
+                } else if (data.input_ok === 'empty field'){
+                    $.func.notification('alert-danger', 'Empty Field!');
+                    console.log('empty field.');
+                } else if(data.input_ok === 'check the machine if ready') {
+                    $.func.notification('alert-danger', 'Check the machine, it should be ready for SSH connection')
+                    console.log('check the machine if ready')
+                } else if(data.input_ok === 'host added success') {
+                    table.row.add( [
+                        data.id,
+                        data.IP,
+                        data.status
+                    ] ).draw( false );
+                    $.func.notification('alert-success', 'Host added successfully!')
+                    console.log('host added success')
+                } else {
+                    console.log('input successfully handled!'); // for debug
+                }
+            }).fail(function(xhr, status) {
+                console.log('Failed: '+ xhr.status + ', Result: ' + status);
+            });
+    });
 
 
     $("#delhost-btn").click(function(){
