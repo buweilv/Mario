@@ -1,11 +1,12 @@
-from flask import render_template, redirect, url_for, request, jsonify
+from flask import render_template, redirect, url_for, request, jsonify, g, current_app
 from .. import  db
 from ..models import Host
 from . import main
-from .forms import HostForm
+from ..vmutils import prepareTest
 import paramiko
 from paramiko.client import SSHClient
 from sqlalchemy.exc import IntegrityError
+from threading import Thread
 import socket
 
 
@@ -19,6 +20,7 @@ def index():
 def del_hosts():
     print request.form.items()  # debug info: print the to be deleted hosts
     for item in request.form.items():
+        print "item is", item
         dl_host = Host.query.filter_by(id=item[1]).first()
         db.session.delete(dl_host)
     try:
@@ -56,7 +58,11 @@ def add_host():
             except IntegrityError:
                 db.session.rollback()
                 return jsonify({'input_ok': 'database failed'})
+            app = current_app._get_current_object()
+            thr = Thread(target=prepareTest, args=[app,  ip, passwd])
+            thr.start()
             sd_host = Host.query.filter_by(IP=ip).first()
+            print "id, IP", sd_host.id, sd_host.IP
             return jsonify({'input_ok': 'host added success',
                             'id': sd_host.id,
                             'IP': sd_host.IP,

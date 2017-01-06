@@ -55,11 +55,13 @@ $(document).ready(function(){
                     $.func.notification('alert-danger', 'Check the machine, it should be ready for SSH connection')
                     console.log('check the machine if ready')
                 } else if(data.input_ok === 'host added success') {
-                    table.row.add( [
+                    var rowNode = table.row.add( [
                         data.id,
                         data.IP,
                         data.status
-                    ] ).draw( false );
+                    ] ).draw( false )
+                        .node();
+                    $(rowNode).attr('id', data.id)
                     $.func.notification('alert-success', 'Host added successfully!')
                     console.log('host added success')
                 } else {
