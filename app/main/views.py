@@ -1,13 +1,38 @@
 from flask import render_template, redirect, url_for, request, jsonify, g, current_app
-from .. import  db
+from .. import  db, socketio
 from ..models import Host
 from . import main
 from ..vmutils import prepareTest
-import paramiko
+from flask_socketio import emit, disconnect
 from paramiko.client import SSHClient
 from sqlalchemy.exc import IntegrityError
 from threading import Thread
+import paramiko
 import socket
+
+
+thread = None
+
+
+def background_thread(app=None):
+    """
+    if host status changed, send event and changed host status to the client
+    """
+    with app.app_context():
+        while True:
+            # update host info interval
+            socketio.sleep(app.config['HOST_UPDATE_INTERVAL'])
+            # socketio.sleep(5)
+            """
+            # test websocket connection
+            socketio.emit('my_response',
+                        {'data': 'Server connected'},
+                        namespace='/hostinfo')
+            """
+            all_hosts = dict([(host.id, host.status) for host in Host.query.all()])
+            #print all_hosts
+            socketio.emit('update_host', all_hosts, namespace='/hostinfo')
+
 
 
 @main.route('/', methods=['GET', 'POST'])
@@ -71,4 +96,19 @@ def add_host():
             return jsonify({'input_ok': 'host already added'})
     else:
         return jsonify({'input_ok': 'empty field'})
+
+
+@socketio.on('connect', namespace='/hostinfo')
+def on_connect():
+    global thread
+    if thread is None:
+        app = current_app._get_current_object()
+        thread = socketio.start_background_task(target=background_thread, app=app)
+    # emit('my_response', {'data': 'conncted'})
+
+@socketio.on('disconnect', namespace='/hostinfo')
+def on_disconnect():
+    print 'Client disconnected...', request.sid
+
+
 

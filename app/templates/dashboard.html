@@ -78,6 +78,9 @@
     <!-- /.col-lg-12 -->
 </div>
 
+<!-- test websocket connect -->
+<div class="row" id="log"></div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -85,5 +88,9 @@
 <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/jquery.dataTables.js') }}"></script>
 <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/dataTable.js') }}"></script>
 <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/dataTables.checkboxes.js') }}"></script>
+<!-- socket.io version:1.7.2 -->
+<script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
+<!-- Get newest host status -->
+<script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/hostinfo.js') }}"></script>
 {% endblock %}
 

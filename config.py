@@ -14,6 +14,10 @@ class Config:
     # The tested PM's moosefs mount point
     MFS_MOUNT_POINT = os.environ.get('MFS_MOUNT_POINT') or '/mnt/mfs/'
     MFS_MASTER = os.environ.get('MFS_MASTER') or '10.214.144.233'
+    # Flask-socketio asynchronous model to use: threading, eventlet, gevent and gevent_uwsgi. Default is eventlet
+    ASYNC_MODE = os.environ.get('ASYNC_MODE') or None
+    # Host status update frequency
+    HOST_UPDATE_INTERVAL = os.environ.get('HOST_UPDATE_INTERVAL') or 5
 
 
 
