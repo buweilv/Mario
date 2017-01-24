@@ -18,6 +18,7 @@ env.user = "root"
 baseimg = mountdir + "centos7-bk.img"
 basexml = mountdir + "host-base.xml"
 domaindfpy = mountdir + "domaindefine.py"
+redispy = mountdir + "redis-2.10.5.tar.gz"
 client_rpm = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir,
                           'tools/moosefs-client-3.0.86-1.rhsystemd.x86_64.rpm'))
 
@@ -30,6 +31,7 @@ def prepareVM():
         * disable iptable
         * create mfsmount dir
         * mount mfs
+        * install redis-py  maybe even pip not installed, basically network connect to the Internet is necessary
     """
     with settings(warn_only=True):
         if run("df -Th | grep %s" % mfsmaster).succeeded:
@@ -61,6 +63,13 @@ def prepareVM():
             with cd(workdir):
                 if run("cp %s ." % domaindfpy).failed:
                     abort("Failed to copy domaindefine.py")
+                if run("cp %s ." % redispy).failed:
+                    abort("Failed to copy redis-2.10.5.tar.gz")
+                if run("tar -xvf redis-2.10.5.tar.gz").failed:
+                    abort("Failed to decompress redis-py")
+                with cd("redis-2.10.5"):
+                    if run("python setup.py install").failed:
+                        ablort("Failed to install redis-py")
             return True
 
 def prepareTest(app, host, passwd):

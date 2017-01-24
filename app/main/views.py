@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from threading import Thread
 import paramiko
 import socket
+import redis
 
 
 thread = None
@@ -54,6 +55,20 @@ def del_hosts():
         db.session.rollback()
         return jsonify({'ok': False})
     return jsonify({'ok': True})
+
+@main.route('/_cpu_test',methods=['POST'])
+def cpu_test():
+    print request.form.items() # debug info: print the cpu test hosts
+    conn = redis.StrictRedis(host='localhost', port=6379, db=5)
+    for item in request.form.items():
+        print "item is", item
+        test_host = Host.query.filter_by(id=item[1]).first().IP
+        recv_num = conn.publish(test_host, 'cpu_test')
+        if recv_num > 1:
+            return jsonify({'deploy_ok': 'more than one', 'IP': test_host})
+        elif recv_num == 0:
+            return jsonify({'deploy_ok': 'no server accept', 'IP': test_host})
+    return jsonify({'deploy_ok': 'success'})
 
 
 @main.route('/_add_host', methods=['POST'])
@@ -104,11 +119,10 @@ def on_connect():
     if thread is None:
         app = current_app._get_current_object()
         thread = socketio.start_background_task(target=background_thread, app=app)
-    # emit('my_response', {'data': 'conncted'})
+    emit('my_response', {'data': 'conncted'})
 
 @socketio.on('disconnect', namespace='/hostinfo')
 def on_disconnect():
     print 'Client disconnected...', request.sid
-
 
 

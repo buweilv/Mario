@@ -24,6 +24,7 @@ $(document).ready(function(){
             $('#notification').append(nof);
         }
     }
+
     $("#addhost-btn").click(function(){
         console.log('send to /_add_host')
         $.ajax($SCRIPT_ROOT + '/_add_host', {
@@ -92,10 +93,10 @@ $(document).ready(function(){
         });
 
         // check the rows_arr get right rowIds
-        console.log('rows_arr len: ' + rows_arr.length + ' Elements: ');
-        console.log(rows_arr);
-        for (var i in rows_arr)
-            console.log(rows_arr[i] + ' ');
+        //console.log('rows_arr len: ' + rows_arr.length + ' Elements: ');
+        //console.log(rows_arr);
+        //for (var i in rows_arr)
+        //   console.log(rows_arr[i] + ' ');
 
 
         // post the selected host ids to the server side
@@ -120,4 +121,54 @@ $(document).ready(function(){
         // Remove added input elements
         $('input[name^=id]').remove();
     });
+
+    $("#cpu-btn").click(function(){
+        var form = $("#form-hosts")
+        var rows_selected = $('tr.selected')
+        var rows_arr = [];
+
+        //Iterate over all selected checkboxes
+        $('tr.selected').each(function(index) {
+        // create a hidden element
+        $(form).append(
+            $('<input>')
+                .attr('type', 'hidden')
+                .attr('name', 'id'+index)
+                .val(this.id)
+         );
+         // end of function append
+         rows_arr.push(this.id);
+        });
+        // end of function each
+        // check the rows_arr get right rowIds
+        console.log('rows_arr len: ' + rows_arr.length + ' Elements: ');
+        console.log(rows_arr);
+        for (var i in rows_arr)
+            console.log(rows_arr[i] + ' ');
+
+         // post the selected host ids to the server side
+         $.ajax($SCRIPT_ROOT + '/_cpu_test', {
+            method: 'post',
+            data: form.serialize(),
+            dataType: 'json'
+         }).done(function(data) {
+            if (data.deploy_ok === 'no server accept') {
+                alert('Server ' + data.IP + ' disconnected!!!')
+            }
+            else if (data.deploy_ok === 'more than one') {
+                alert('More than One Server' + data.IP + ' Accept the CPU benchmark test')
+            }
+            else {
+                for (var index in rows_arr) {
+                    console.log('CPU test will be executed on server' + rows_arr[index])
+                }
+            }
+         }).fail(function(xhr, status) {
+            console.log('Failed: '+ xhr.status + ', Result: ' + status);
+         });
+
+         // Remove added input elements
+        $('input[name^=id]').remove();
+    });
+    // the end of the cpu-btn click
 });

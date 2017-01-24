@@ -34,4 +34,4 @@ class Host(db.Model):
                 db.session.rollback()
 
     def __repr__(self):
-        return '<Host IP: %r>' % self.IP
+        return '<Host IP: %r; Host status: %r>' % (self.IP, self.status)
