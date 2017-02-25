@@ -4,13 +4,14 @@ from flask_bootstrap import Bootstrap
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
 from config import config, Config
+import redis
 
 bootstrap = Bootstrap()
 #moment = Moment()
 db = SQLAlchemy()
 socketio = SocketIO()
-
-
+pool = redis.ConnectionPool(host='localhost', port=6379, db=5)
+conn = redis.Redis(connection_pool=pool)
 
 def create_app(config_name):
     app = Flask(__name__)

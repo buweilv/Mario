@@ -14,7 +14,7 @@
     <div class="col-lg-12">
         <div class="panel panel-default">
         <div class="panel-heading">
-            Hosts In Control
+            <b>Hosts In Control</b>
         </div>
         <!-- /.panel-heading -->
         <div class="panel-body">
@@ -24,7 +24,6 @@
                            <button type="button" id="cpu-btn" class="btn btn-primary">CPU Test</button>
                            <button type="button" id="mem-btn" class="btn btn-primary">Mem Test</button>
                            <button type="button" id="io-btn" class="btn btn-primary">I/O Test</button>
-                           <button type="button" id="network-btn" class="btn btn-primary">Net Test</button>
                            <button type="button" id="delhost-btn" class="btn btn-danger"><i class="fa fa-minus-circle fa-fw"></i>&nbsp Del Host</button>
                            <button type="button" class="btn btn-success" data-toggle="collapse" data-target="#add-panel">
                                <i class="fa fa-plus-square fa-fw"></i>&nbsp Add Host</button>
@@ -60,7 +59,7 @@
                             {% for host in hosts %}
                             <tr id= {{ host.id }} class="gradeA odd" role="row">
                                 <td>{{ host.id }}</td>
-                                <td>{{ host.IP }}</td>
+                                <td name="ip">{{ host.IP }}</td>
                                 <td>{{ host.status }}</td>
                             </tr>
                             {% endfor %}
@@ -69,6 +68,16 @@
                        <form id="form-hosts">
                        </form>
                     </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-4">
+                </div>
+                <div class="col-sm-4">
+                    <p>Async mode is: <b>{{ async_mode }}</b></p>
+                </div>
+                <div class="col-sm-4">
+                    <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
+                </div>
             </div>
         </div>
             <!-- /.panel-body -->

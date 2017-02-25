@@ -1,3 +1,4 @@
+# coding=utf-8 
 import fabric
 import os
 from fabric.api import execute, settings, run, abort, put, cd, env
@@ -5,9 +6,11 @@ from fabric.network import disconnect_all
 from config import Config
 from threading import Thread
 from flask import g
-from . import db
-from .models import Host
-
+from . import db, conn
+from .models import Host, CPUResult, MemResult, IOResult 
+import redis
+from sqlalchemy.exc import IntegrityError
+import json
 
 workdir = Config.WORK_DIR
 mountdir = Config.MFS_MOUNT_POINT
@@ -18,12 +21,16 @@ env.user = "root"
 baseimg = mountdir + "centos7-bk.img"
 basexml = mountdir + "host-base.xml"
 domaindfpy = mountdir + "domaindefine.py"
-redispy = mountdir + "redis-2.10.5.tar.gz"
+redistar = mountdir + "redis-2.10.5.tar.gz"
+sysbenchtar = mountdir + "sysbench-1.0.1.tar.gz"
+iozonetar = mountdir + "iozone3_465.tar"
+streamtar = mountdir + "stream.tar"
+daemonpy = mountdir + "daemon.py"
 client_rpm = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir,
                           'tools/moosefs-client-3.0.86-1.rhsystemd.x86_64.rpm'))
 
 
-def prepareVM():
+def prepareVM(host):
     """
     prepare for the VM creation:
         * create work dir
@@ -42,6 +49,9 @@ def prepareVM():
             if run("test -d %s" % workdir).failed:
                 # print "Host string1:", env.host_string
                 run("mkdir %s" % workdir)
+            # check if log dir exists
+            if run("test -d /var/log/mario/").failed:
+                run("mkdir /var/log/mario")
             # print "After first run - fabric.state.connections: ", fabric.state.connections
             if run("rpm -qa | grep moosefs-client").failed:
                 if put(client_rpm, workdir).failed:
@@ -59,26 +69,75 @@ def prepareVM():
                 run("mkdir %s" % mountdir)
             if run("mfsmount %s -H %s" % (mountdir, mfsmaster)).failed:
                 abort("Failed to mount mfs filesystem")
-            # copy necessary files to workdir: domaindefine.py
+            # after mounting moosefs, copy necessary files to workdir
+            # * domaindefine.py
             with cd(workdir):
                 if run("cp %s ." % domaindfpy).failed:
                     abort("Failed to copy domaindefine.py")
-                if run("cp %s ." % redispy).failed:
-                    abort("Failed to copy redis-2.10.5.tar.gz")
-                if run("tar -xvf redis-2.10.5.tar.gz").failed:
-                    abort("Failed to decompress redis-py")
-                with cd("redis-2.10.5"):
-                    if run("python setup.py install").failed:
-                        ablort("Failed to install redis-py")
+                if run("cp %s ." % daemonpy).failed:
+                    abort("Failed to copy daemon.py")
+                if run("python daemon.py start --ip %s" %host).failed:
+                    abort("Falied to start daemon process")
+                # check if redis-py installed
+                if run("python -c 'import redis'").failed:
+                    if run("cp %s ." % redistar).failed:
+                        abort("Failed to copy redis-2.10.5.tar.gz")
+                        # decompress and install redis-py
+                    if run("tar -xvf redis-2.10.5.tar.gz").failed:
+                        abort("Failed to decompress redis-py")
+                    with cd("redis-2.10.5"):
+                        if run("python setup.py install").failed:
+                            abort("Failed to install redis-py")
+                # check if benchmarks exisit
+                # check if sysbench exists
+                if run("sysbench --version").failed:
+                    if run("cp %s /usr/local/src/" % sysbenchtar).failed:
+                        abort("Failed to copy sysbench-1.0.1.tar.gz")
+                    with cd("/usr/local/src/"):
+                        if run("tar -xvf sysbench-1.0.1.tar.gz").failed:
+                            abort("Failed to decompress sysbench-1.0.1.tar.gz")
+                        if run("yum install -y libtool.x86_64").failed:
+                            abort("Faile to install necessary packages for sysbench.")
+                        with cd("sysbench-1.0.1"):
+                            if run("./autogen.sh").failed:
+                                abort("Failed to autogen sysbench")
+                            if run("./configure --without-mysql").failed:
+                                abort("Failed to configure sysbench")
+                            if run("make -j 4").failed:
+                                abort("Failed to make sysbench")
+                            if run("make install").failed:
+                                abort("Failed to make install sysbench")
+                # check if iozone exists
+                if run("/usr/local/src/iozone3_465/src/current/iozone -v").failed:
+                    if run("cp %s /usr/local/src/" % iozonetar).failed:
+                        abort("Failed to copy iozone3_465.tar")
+                    with cd("/usr/local/src/"):
+                        if run("tar -xvf iozone3_465.tar").failed:
+                            abort("Failed to decompress iozone3_465.tar")
+                        with cd("iozone3_465/src/current/"):
+                            if run("make linux-AMD64").failed:
+                                abort("Failed to install iozone!")
+                if run("cp %s /usr/local/src/" % streamtar).failed:
+                    abort("Failed to copy stream.tar")
+                with cd("/usr/local/src/"):
+                    if run("tar -xvf stream.tar").failed:
+                        abort("Failed to decompress stream.tar")
+
+
+
+                            
             return True
 
+
 def prepareTest(app, host, passwd):
-    from fabric.api import env
-    env.passwords['root@%s:22'%(host,)] = passwd
+    print "In prepareTest .."
+    env.passwords['root@%s:22' % (host,)] = passwd
     with app.app_context():
         try:
             db_host = Host.query.filter_by(IP=host).first()
-            execute(prepareVM, hosts=[host])
+            print "Get a host: ", host
+            execute(prepareVM, host, hosts=[host])
+            print "prepare finished!"
             db_host.status = "ready"
         except SystemExit:
             db_host.status = "prepare_failed"
@@ -86,6 +145,94 @@ def prepareTest(app, host, passwd):
             db.session.add(db_host)
             db.session.commit()
             disconnect_all()
+
+def clearhost():
+    with settings(warn_only=True):
+        with cd("/"):
+            if run("df -Th | grep %s" % Config.MFS_MASTER).succeeded:
+                if run("umount %s" % Config.MFS_MOUNT_POINT).failed:
+                    abort("Failed to umount mfs")
+            if run("test -d %s" % Config.WORK_DIR).succeeded:
+                # stop daemon
+                with cd("%s" % Config.WORK_DIR):
+                    if run("python daemon.py status").succeeded:
+                        run("python daemon.py stop")
+                with cd("/"):
+                    if run("rm -rf %s" % Config.WORK_DIR).failed:
+                        abort("Failed to remove %s" % Config.WORK_DIR)
+    return True
+
+def collect_result(app):
+    with app.app_context():
+        p = conn.pubsub(ignore_subscribe_messages=True)
+        print 'redis thread is liestening ... '
+        # scan database to subscribe newly added hosts
+        hosts_dict = dict((host.id, host.IP) for host in Host.query.all())
+        for host in Host.query.all():
+            p.subscribe("%s:RESULT" % host.IP)
+            # print "subscrube channel %s:RESULT\n" % host.IP
+        while True:
+            message = p.get_message()
+            if message:
+                print "recive result: ", message
+                message_json = json.loads(message['data'])
+                if message_json['type'] == 'cpu':
+                    if message_json['success']:
+                        print 'starts storing cpu result ...'
+                        result = CPUResult(IP=message_json['IP'], success=message_json['success'], pmresult=message_json['pmresult'], deployTime=message_json['deployTime'])
+                    else:
+                        result = CPUResult(IP=message_json['IP'], success=message_json['success'], pmerrorInfo=message_json['pmerrorInfo'], deployTime=message_json['deployTime'])
+                elif message_json['type'] == 'mem':
+                    if message_json['success']:
+                        result = MemResult(IP=message_json['IP'], success=message_json['success'], pmresult=message_json['pmresult'], deployTime=message_json['deployTime'])
+                    else:
+                        result = MemResult(IP=message_json['IP'], success=message_json['success'], pmerrorInfo=message_json['pmerrorInfo'], deployTime=message_json['deployTime'])
+                elif message_json['type'] == 'io':
+                    if message_json['success']:
+                        result = IOResult(IP=message_json['IP'], success=message_json['success'], deployTime=message_json['deployTime'],
+                                        pmInitialWrite=message_json['pmInitialWrite'], pmRewrite=message_json['pmRewrite'],
+                                        pmRead=message_json['pmRead'], pmReRead=message_json['pmReRead'])
+                    else:
+                        result = IOResult(IP=message_json['IP'], success=message_json['success'], pmerrorInfo=message_json['pmerrorInfo'], deployTime=message_json['deployTime'])
+                # store the result
+                try:
+                    db.session.add(result)
+                    db.session.commit()
+                except IntegrityError:
+                    print 'oh~ Failed to store.'
+                    db.session.rollback()
+            # clear the database session
+            db.session.remove()
+            hosts_dict_check = dict((host.id, host.IP) for host in Host.query.all())
+            # check if there are newly added hosts
+            newly_add_hosts = []
+            for id in hosts_dict_check:
+                if id not in hosts_dict:
+                    newly_add_hosts.append(hosts_dict_check[id])
+            # check if there are deleted hosts
+            deleted_hosts = []
+            for id in hosts_dict:
+                if id not in hosts_dict_check:
+                    deleted_hosts.append(hosts_dict[id])
+            # subscribe newly added hosts and unsubscribe deleted hosts
+            if newly_add_hosts:
+                for host_ip in newly_add_hosts:    
+                    p.subscribe("%s:RESULT" % host_ip)
+            if deleted_hosts:
+                for host_ip in deleted_hosts:
+                    p.unsubscribe("%s:RESULT" % host_ip)
+            hosts_dict = hosts_dict_check
+
+
+def rmhost(host, passwd):
+    env.passwords['root@%s:22' % (host,)] = passwd
+    try:
+        execute(clearhost, hosts=[host])
+    except SystemExit:
+        return False
+    finally:
+        disconnect_all()
+    return True
 
 
 def defineVM(vmnum=1, existvmnum=0, **vmpara):

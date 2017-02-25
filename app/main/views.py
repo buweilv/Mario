@@ -1,19 +1,21 @@
 from flask import render_template, redirect, url_for, request, jsonify, g, current_app
-from .. import  db, socketio
+from .. import db, socketio, conn
 from ..models import Host
 from . import main
-from ..vmutils import prepareTest
+from ..vmutils import prepareTest, rmhost, collect_result
 from flask_socketio import emit, disconnect
 from paramiko.client import SSHClient
 from sqlalchemy.exc import IntegrityError
 from threading import Thread
 import paramiko
 import socket
-import redis
+import json
+import datetime
+
 
 
 thread = None
-
+redis_thread = None
 
 def background_thread(app=None):
     """
@@ -32,14 +34,17 @@ def background_thread(app=None):
             """
             all_hosts = dict([(host.id, host.status) for host in Host.query.all()])
             #print all_hosts
+            #all_hosts['test'] = 'test'
             socketio.emit('update_host', all_hosts, namespace='/hostinfo')
+            db.session.remove()
 
 
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
     all_hosts = Host.query.all()
-    return render_template('dashboard.html', hosts=all_hosts)
+    # return render_template('dashboard.html', hosts=all_hosts)
+    return render_template('dashboard.html', hosts=all_hosts, async_mode=socketio.async_mode)
 
 
 @main.route('/_del_hosts', methods=['POST'])
@@ -48,7 +53,10 @@ def del_hosts():
     for item in request.form.items():
         print "item is", item
         dl_host = Host.query.filter_by(id=item[1]).first()
-        db.session.delete(dl_host)
+        if rmhost(dl_host.IP, dl_host.password):
+            db.session.delete(dl_host)
+        else:
+            dl_host.status = "remove_failed"
     try:
         db.session.commit()
     except IntegrityError:
@@ -56,19 +64,104 @@ def del_hosts():
         return jsonify({'ok': False})
     return jsonify({'ok': True})
 
+
 @main.route('/_cpu_test',methods=['POST'])
 def cpu_test():
     print request.form.items() # debug info: print the cpu test hosts
-    conn = redis.StrictRedis(host='localhost', port=6379, db=5)
+    status_dict = {}
+    """
+    status:
+    'more than one' (listening)
+    'no one' (listening)
+    'success' (just one client listening)
+    """
     for item in request.form.items():
         print "item is", item
         test_host = Host.query.filter_by(id=item[1]).first().IP
-        recv_num = conn.publish(test_host, 'cpu_test')
+        # generate deploy time, and send deploy info
+        now = datetime.datetime.now()
+        deploytime = now.strftime("%Y-%m-%d-%H%M%S")
+        deploy_json = {
+            'type': 'cpu',
+            'time': deploytime
+        }
+        deploy_str = json.dumps(deploy_json)
+        recv_num = conn.publish(test_host, deploy_str)
         if recv_num > 1:
-            return jsonify({'deploy_ok': 'more than one', 'IP': test_host})
+            status_dict[test_host] = 'more than one'
+            # return jsonify({'deploy_ok': 'more than one', 'IP': test_host})
         elif recv_num == 0:
-            return jsonify({'deploy_ok': 'no server accept', 'IP': test_host})
-    return jsonify({'deploy_ok': 'success'})
+            status_dict[test_host] = 'no one'
+            # return jsonify({'deploy_ok': 'no server accept', 'IP': test_host})
+        else:
+            status_dict[test_host] = 'success'
+    return jsonify(status_dict)
+
+
+@main.route('/_mem_test',methods=['POST'])
+def mem_test():
+    print request.form.items() # debug info: print the cpu test hosts
+    status_dict = {}
+    """
+    status:
+    'more than one' (listening)
+    'no one' (listening)
+    'success' (just one client listening)
+    """
+    for item in request.form.items():
+        print "item is", item
+        test_host = Host.query.filter_by(id=item[1]).first().IP
+        # generate deploy time, and send deploy info
+        now = datetime.datetime.now()
+        deploytime = now.strftime("%Y-%m-%d-%H%M%S")
+        deploy_json = {
+            'type': 'mem',
+            'time': deploytime
+        }
+        deploy_str = json.dumps(deploy_json)
+        recv_num = conn.publish(test_host, deploy_str)
+        if recv_num > 1:
+            status_dict[test_host] = 'more than one'
+            # return jsonify({'deploy_ok': 'more than one', 'IP': test_host})
+        elif recv_num == 0:
+            status_dict[test_host] = 'no one'
+            # return jsonify({'deploy_ok': 'no server accept', 'IP': test_host})
+        else:
+            status_dict[test_host] = 'success'
+    return jsonify(status_dict)
+
+
+@main.route('/_io_test',methods=['POST'])
+def io_test():
+    print request.form.items() # debug info: print the cpu test hosts
+    status_dict = {}
+    """
+    status:
+    'more than one' (listening)
+    'no one' (listening)
+    'success' (just one client listening)
+    """
+    for item in request.form.items():
+        print "item is", item
+        test_host = Host.query.filter_by(id=item[1]).first().IP
+        # generate deploy time, and send deploy info
+        now = datetime.datetime.now()
+        deploytime = now.strftime("%Y-%m-%d-%H%M%S")
+        deploy_json = {
+            'type': 'io',
+            'time': deploytime
+        }
+        deploy_str = json.dumps(deploy_json)
+        recv_num = conn.publish(test_host, deploy_str)
+        if recv_num > 1:
+            status_dict[test_host] = 'more than one'
+            # return jsonify({'deploy_ok': 'more than one', 'IP': test_host})
+        elif recv_num == 0:
+            status_dict[test_host] = 'no one'
+            # return jsonify({'deploy_ok': 'no server accept', 'IP': test_host})
+        else:
+            status_dict[test_host] = 'success'
+    return jsonify(status_dict)
 
 
 @main.route('/_add_host', methods=['POST'])
@@ -102,7 +195,7 @@ def add_host():
             thr = Thread(target=prepareTest, args=[app,  ip, passwd])
             thr.start()
             sd_host = Host.query.filter_by(IP=ip).first()
-            print "id, IP", sd_host.id, sd_host.IP
+            # print "id, IP", sd_host.id, sd_host.IP
             return jsonify({'input_ok': 'host added success',
                             'id': sd_host.id,
                             'IP': sd_host.IP,
@@ -116,13 +209,27 @@ def add_host():
 @socketio.on('connect', namespace='/hostinfo')
 def on_connect():
     global thread
+    global redis_thread
+    print 'connected!'
     if thread is None:
         app = current_app._get_current_object()
         thread = socketio.start_background_task(target=background_thread, app=app)
+        print 'create host status thread to push newest host info to clients ...'
+    if redis_thread is None:
+        app = current_app._get_current_object()
+        redis_thread = Thread(target=collect_result, args=(app,))
+        redis_thread.start()
+        print 'create redis thread listening for result info ...'
     emit('my_response', {'data': 'conncted'})
+
 
 @socketio.on('disconnect', namespace='/hostinfo')
 def on_disconnect():
     print 'Client disconnected...', request.sid
+
+
+@socketio.on('my_ping', namespace="/hostinfo")
+def ping_pong():
+    emit('my_pong')
 
 

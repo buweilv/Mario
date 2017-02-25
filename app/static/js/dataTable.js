@@ -35,6 +35,7 @@ $(document).ready(function(){
       //          passwd: $('#passwd').val()
       //      },
             data: $('#add-host-form').serialize(),
+            // revieve data format
             dataType: 'json'
             }).done(function(data){
                 if (data.input_ok === 'invalid hostname') {
@@ -126,6 +127,7 @@ $(document).ready(function(){
         var form = $("#form-hosts")
         var rows_selected = $('tr.selected')
         var rows_arr = [];
+        var ips_arr = [];
 
         //Iterate over all selected checkboxes
         $('tr.selected').each(function(index) {
@@ -138,31 +140,48 @@ $(document).ready(function(){
          );
          // end of function append
          rows_arr.push(this.id);
+         ips_arr.push($(this).children('td[name=ip]').text());
         });
         // end of function each
         // check the rows_arr get right rowIds
+        /*
         console.log('rows_arr len: ' + rows_arr.length + ' Elements: ');
         console.log(rows_arr);
         for (var i in rows_arr)
             console.log(rows_arr[i] + ' ');
-
-         // post the selected host ids to the server side
+        */
+        // end of log
+        // post the selected host ids to the server side
          $.ajax($SCRIPT_ROOT + '/_cpu_test', {
             method: 'post',
             data: form.serialize(),
             dataType: 'json'
          }).done(function(data) {
-            if (data.deploy_ok === 'no server accept') {
-                alert('Server ' + data.IP + ' disconnected!!!')
+            console.log(data)
+            console.log(ips_arr)
+            var message = {
+                status: "error",
+                info: ""
+            };
+            for (var i in ips_arr){
+                console.log(ips_arr[i])
+                if (data[ips_arr[i]] != 'success')
+                    if (data[ips_arr[i]] === 'no one')
+                        message['info'] += data[ips_arr[i]] +' is listening ' + 'channel ' + ips_arr[i] + '\n';
+                    else
+                        message['info'] += data[ips_arr[i]] +' are listening ' + 'channel ' + ips_arr[i] + '\n';
             }
-            else if (data.deploy_ok === 'more than one') {
-                alert('More than One Server' + data.IP + ' Accept the CPU benchmark test')
+            if (!message['info'])
+            {
+                message['info'] = "All hosts deploy successfully!"
+                message['status'] = "success"
             }
-            else {
-                for (var index in rows_arr) {
-                    console.log('CPU test will be executed on server' + rows_arr[index])
-                }
-            }
+            swal({
+                title: "CPU test deploy info",
+                text: message['info'],
+                type: message['status'],
+                confirmButtonText: "Got it!"
+            })
          }).fail(function(xhr, status) {
             console.log('Failed: '+ xhr.status + ', Result: ' + status);
          });
@@ -171,4 +190,144 @@ $(document).ready(function(){
         $('input[name^=id]').remove();
     });
     // the end of the cpu-btn click
+    
+    $("#mem-btn").click(function(){
+        var form = $("#form-hosts")
+        var rows_selected = $('tr.selected')
+        var rows_arr = [];
+        var ips_arr = [];
+
+        //Iterate over all selected checkboxes
+        $('tr.selected').each(function(index) {
+        // create a hidden element
+        $(form).append(
+            $('<input>')
+                .attr('type', 'hidden')
+                .attr('name', 'id'+index)
+                .val(this.id)
+         );
+         // end of function append
+         rows_arr.push(this.id);
+         ips_arr.push($(this).children('td[name=ip]').text());
+        });
+        // end of function each
+        // check the rows_arr get right rowIds
+        /*
+        console.log('rows_arr len: ' + rows_arr.length + ' Elements: ');
+        console.log(rows_arr);
+        for (var i in rows_arr)
+            console.log(rows_arr[i] + ' ');
+        */
+        // end of log
+        // post the selected host ids to the server side
+         $.ajax($SCRIPT_ROOT + '/_mem_test', {
+            method: 'post',
+            data: form.serialize(),
+            dataType: 'json'
+         }).done(function(data) {
+            console.log(data)
+            console.log(ips_arr)
+            var message = {
+                status: "error",
+                info: ""
+            };
+            for (var i in ips_arr){
+                console.log(ips_arr[i])
+                if (data[ips_arr[i]] != 'success')
+                    if (data[ips_arr[i]] === 'no one')
+                        message['info'] += data[ips_arr[i]] +' is listening ' + 'channel ' + ips_arr[i] + '\n';
+                    else
+                        message['info'] += data[ips_arr[i]] +' are listening ' + 'channel ' + ips_arr[i] + '\n';
+            }
+            if (!message['info'])
+            {
+                message['info'] = "All hosts deploy successfully!"
+                message['status'] = "success"
+            }
+            swal({
+                title: "Mem test deploy info",
+                text: message['info'],
+                type: message['status'],
+                confirmButtonText: "Got it!"
+            })
+         }).fail(function(xhr, status) {
+            console.log('Failed: '+ xhr.status + ', Result: ' + status);
+         });
+
+         // Remove added input elements
+        $('input[name^=id]').remove();
+    });
+    // the end of the mem-btn click
+    
+
+    $("#io-btn").click(function(){
+        var form = $("#form-hosts")
+        var rows_selected = $('tr.selected')
+        var rows_arr = [];
+        var ips_arr = [];
+
+        //Iterate over all selected checkboxes
+        $('tr.selected').each(function(index) {
+        // create a hidden element
+        $(form).append(
+            $('<input>')
+                .attr('type', 'hidden')
+                .attr('name', 'id'+index)
+                .val(this.id)
+         );
+         // end of function append
+         rows_arr.push(this.id);
+         ips_arr.push($(this).children('td[name=ip]').text());
+        });
+        // end of function each
+        // check the rows_arr get right rowIds
+        /*
+        console.log('rows_arr len: ' + rows_arr.length + ' Elements: ');
+        console.log(rows_arr);
+        for (var i in rows_arr)
+            console.log(rows_arr[i] + ' ');
+        */
+        // end of log
+        // post the selected host ids to the server side
+         $.ajax($SCRIPT_ROOT + '/_io_test', {
+            method: 'post',
+            data: form.serialize(),
+            dataType: 'json'
+         }).done(function(data) {
+            console.log(data)
+            console.log(ips_arr)
+            var message = {
+                status: "error",
+                info: ""
+            };
+            for (var i in ips_arr){
+                console.log(ips_arr[i])
+                if (data[ips_arr[i]] != 'success')
+                    if (data[ips_arr[i]] === 'no one')
+                        message['info'] += data[ips_arr[i]] +' is listening ' + 'channel ' + ips_arr[i] + '\n';
+                    else
+                        message['info'] += data[ips_arr[i]] +' are listening ' + 'channel ' + ips_arr[i] + '\n';
+            }
+            if (!message['info'])
+            {
+                message['info'] = "All hosts deploy successfully!"
+                message['status'] = "success"
+            }
+            swal({
+                title: "I/O test deploy info",
+                text: message['info'],
+                type: message['status'],
+                confirmButtonText: "Got it!"
+            })
+         }).fail(function(xhr, status) {
+            console.log('Failed: '+ xhr.status + ', Result: ' + status);
+         });
+
+         // Remove added input elements
+        $('input[name^=id]').remove();
+    });
+    // the end of the io-btn click
+    
+
+
 });

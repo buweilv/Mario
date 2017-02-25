@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 from app import create_app, db, socketio
-from app.models import Host
+from app.models import Host, CPUResult, MemResult, IOResult
 from flask_script import Manager, Shell, Option, Server as _Server
 from flask_migrate import Migrate, MigrateCommand
 from flask import current_app
@@ -71,7 +71,7 @@ manager.add_command("runserver", Server())
 
 
 def make_shell_context():
-    return dict(app=app, db=db, Host=Host)
+    return dict(app=app, db=db, Host=Host, CPUResult=CPUResult, MemResult=MemResult, IOResult=IOResult)
 manager.add_command("shell", Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)
 

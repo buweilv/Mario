@@ -34,4 +34,81 @@ class Host(db.Model):
                 db.session.rollback()
 
     def __repr__(self):
-        return '<Host IP: %r; Host status: %r>' % (self.IP, self.status)
+        return '<Host id: %r, Host IP: %r; Host status: %r>' % (self.id, self.IP, self.status)
+
+class CPUResult(db.Model):
+    __tablename__ = "cpuresults"
+    # result: sysbench run total time (s) 
+    id = db.Column(db.Integer, primary_key=True)
+    IP = db.Column(db.String(64))
+    deployTime = db.Column(db.String(64))
+    success = db.Column(db.Boolean)
+    pmresult = db.Column(db.Float, default=0)
+    pmerorInfo = db.Column(db.Text, nullable=True)
+    vmresult = db.Column(db.Float, default=0)
+    vmerorInfo = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):
+        error_message = ""
+        if self.success:
+            return 'Host %s run cpu benchmark on pm costs %fs, on vm costs %fs' % (self.IP, self.pmresult, self.vmresult)
+        else:
+            if pmerorInfo:
+                error_message += 'Host %s run cpu benchmark on pm get error:\n %s \n' % (self.IP, self.pmerrorinfo)
+            if vmerorInfo:
+                error_message += 'Host %s run cpu benchmark on vm get error:\n %s \n' % (self.IP, self.vmerrorinfo)
+            return error_message
+
+
+class MemResult(db.Model):
+    __tablename__ = "memresults"
+    # result: Traid throughput 10 times average (MB/s)
+    id = db.Column(db.Integer, primary_key=True)
+    IP = db.Column(db.String(64))
+    deployTime = db.Column(db.String(64))
+    success = db.Column(db.Boolean)
+    pmresult = db.Column(db.Float, default=0)
+    pmerorInfo = db.Column(db.Text, nullable=True)
+    vmresult = db.Column(db.Float, default=0)
+    vmerorInfo = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):
+        error_message = ""
+        if self.success:
+            return 'Host %s run mem benchmark on pm throughput reach %fMB/s, on vm throughput reach %fMB/s' % (self.IP, self.pmresult, self.vmresult)
+        else:
+            if pmerorInfo:
+                error_message += 'Host %s run mem benchmark on pm get error:\n %s \n' % (self.IP, self.pmerrorinfo)
+            if vmerorInfo:
+                error_message += 'Host %s run mem benchmark on vm get error:\n %s \n' % (self.IP, self.vmerrorinfo)
+            return error_message
+
+
+class IOResult(db.Model):
+    __tablename__ = "ioresults"
+    # result: Initial write, Rewrite, read, reread mode speed (kb/s)
+    id = db.Column(db.Integer, primary_key=True)
+    IP = db.Column(db.String(64))
+    deployTime = db.Column(db.String(64))
+    success = db.Column(db.Boolean)
+    pmInitialWrite = db.Column(db.Float, default=0)
+    pmRewrite = db.Column(db.Float, default=0)
+    pmRead = db.Column(db.Float, default=0)
+    pmReRead = db.Column(db.Float, default=0)
+    pmerorInfo = db.Column(db.Text, nullable=True)
+    vmInitialWrite = db.Column(db.Float, default=0)
+    vmRewrite = db.Column(db.Float, default=0)
+    vmRead = db.Column(db.Float, default=0)
+    vmReRead = db.Column(db.Float, default=0)
+    vmerorInfo = db.Column(db.Text, nullable=True)
+
+    def __repr__(self):
+        error_message = ""
+        if self.success:
+            return 'Host %s run io benchmark on pm read speed reach %fkb/s, on vm read speed reach %fkb/s' % (self.IP, self.pmRead, self.vmRead)
+        else:
+            if pmerorInfo:
+                error_message += 'Host %s run mem benchmark on pm get error:\n %s \n' % (self.IP, self.pmerrorinfo)
+            if vmerorInfo:
+                error_message += 'Host %s run mem benchmark on vm get error:\n %s \n' % (self.IP, self.vmerrorinfo)
+            return error_message
