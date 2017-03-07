@@ -1,5 +1,7 @@
 *.pyc
 .idea/
-tools/
-!tools/*.py
+tools/*.gz
+tools/*.xz
+tools/*.tar
+tools/*.rpm
 *.swp
