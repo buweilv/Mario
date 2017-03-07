@@ -64,6 +64,8 @@ $(document).ready(function(){
                     ] ).draw( false )
                         .node();
                     $(rowNode).attr('id', data.id)
+                    childNode = $(rowNode).children('td').eq(1)
+                    childNode.attr('name', 'ip')
                     $.func.notification('alert-success', 'Host added successfully!')
                     console.log('host added success')
                 } else {
@@ -190,7 +192,7 @@ $(document).ready(function(){
         $('input[name^=id]').remove();
     });
     // the end of the cpu-btn click
-    
+
     $("#mem-btn").click(function(){
         var form = $("#form-hosts")
         var rows_selected = $('tr.selected')
@@ -258,7 +260,7 @@ $(document).ready(function(){
         $('input[name^=id]').remove();
     });
     // the end of the mem-btn click
-    
+
 
     $("#io-btn").click(function(){
         var form = $("#form-hosts")
@@ -327,7 +329,7 @@ $(document).ready(function(){
         $('input[name^=id]').remove();
     });
     // the end of the io-btn click
-    
+
 
 
 });

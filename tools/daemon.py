@@ -200,6 +200,8 @@ def vm_test(type, vm_ip, pm_ip, deploy_time, vm_logname, connection):
                 recv_num = connection.publish("%s:RESULT" % pm_ip, result_str)
                 if recv_num < 1:
                     print "Test Server may not recive cpu test error info at %s\n" % deploy_time
+                if ssh:
+                    ssh.close()
                 return False
     print "connect to vm ip: ", vm_ip
     if type == "cpu":
@@ -233,6 +235,8 @@ def vm_test(type, vm_ip, pm_ip, deploy_time, vm_logname, connection):
             recv_num = connection.publish("%s:RESULT" % pm_ip, result_str)
             if recv_num < 1:
                 print "Test Server may not recive vm  cpu test error info at %s\n" % deploy_time
+            if ssh:
+                ssh.close()
             return False
         else:
             return True
@@ -313,154 +317,12 @@ def get_result(type,  pm_ip, deploy_time, pm_logname, vm_logname, connection):
         print "Extract result from %(time)s %(type)s test log file encounters error!\n" % {'type': type, 'time': deploy_time}
         return False
 
-"""
-def cpu_test(deploy_time, connection, IP, cpu_cores, mem):
-    logname = "/var/log/mario/"+"cpu-"+deploy_time+".log"
-    vm_logname = "/var/log/mario/"+"vm-cpu-"+deploy_time+".log"
-    errorinfo=''
-    # create vm config file: VM CPU cores same as the pm, VM mem half of the pm and vm incremental qcow2 format image
-    mac = [ 0x52, 0x54, 0x00,
-           random.randint(0x00, 0x7f),
-           random.randint(0x00, 0xff),
-           random.randint(0x00, 0xff) ]
-    mac_addr = ':'.join(map(lambda x: "%02x" % x, mac))
-    sp.call("qemu-img create -f qcow2 -b /mnt/mfs/sl6-bk.img /var/lib/libvirt/images/vm-cpu.qcow2", shell=True)
-    tree = ET.ElementTree(file="/mnt/mfs/base.xml")
-    tree.find('name').text = "cpu-vm"
-    tree.find('memory').text = str(mem / 2)
-    tree.find('currentMemory').text = str(mem / 2)
-    tree.find('vcpu').text = str(cpu_cores)
-    tree.find('devices/interface[@type="network"]/mac').attrib['address'] = mac_addr
-    tree.find('devices/disk[@device="disk"]/source').attrib['file'] = "/var/lib/libvirt/images/vm-cpu.qcow2"
-    tree.write('/var/log/mario/cpu-vm.xml')
-    generate_config('cpu',mem, cpu_cores)
-    # exec cpu test
-    proc = sp.Popen('sysbench --threads=`cat /proc/cpuinfo | grep processor | wc -l`  --events=20000 cpu --cpu-max-prime=50000 run', shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
-    out = proc.communicate()
-    with open(logname, 'w') as logfile:
-        # stdout
-        if out[0]:
-            logfile.write(out[0])
-        # stderr, both write to logfile
-        if out[1]:
-            logfile.write(out[1])
-            errorinfo+=out[1]
-        if errorinfo:
-            # send error info to server
-            print errorinfo
-            result_json = {
-                'type': 'cpu',
-                'IP': IP,
-                'success': False,
-                'deployTime': deploy_time,
-                'pmerrorInfo': errorInfo
-            }
-            result_str = json.dumps(result_json)
-            recv_num = connection.publish("%s:RESULT" % IP, result_str)
-            if recv_num < 1:
-                print "Test Server may not recive cpu test error info at %s\n" % deploy_time
-            return False
-    # start vm and get ip from mac
-    try:
-        sp.check_call("virsh create /var/log/mario/cpu-vm.xml", shell=True)
-        time.sleep(30)
-        vm_ip = get_ip_from_mac(mac_addr)
-        while not vm_ip:
-                time.sleep(5)
-                vm_ip = get_ip_from_mac(mac_addr)
-    except CalledProcessError as cpe:
-        print cpe
-        result_json = {
-            'type': 'cpu',
-            'IP': IP,
-            'success': False,
-            'deployTime': deploy_time,
-            'pmerrorInfo': "vm failed to start"
-        }
-        result_str = json.dumps(result_json)
-        recv_num = connection.publish("%s:RESULT" % IP, result_str)
-        if recv_num < 1:
-            print "Test Server may not recive cpu test error info at %s\n" % deploy_time
-        return False
-    # exec vm cpu test
-    wait_num = 10
-    time.sleep(30) # wait for sshd starts in vm
-    while True:
-        try:
-            ssh = connect_vm(vm_ip)
-            break
-        except paramiko.ssh_exception.NoValidConnectionsError as e:
-            if wait_num > 0:
-                time.sleep(5)
-                wait_num-=1
-                continue
-            else:
-                print "SSH Connection Failed: ", e.errors[(vm_ip, 22)]
-                result_json = {
-                    'type': 'cpu',
-                    'IP': IP,
-                    'success': False,
-                    'deployTime': deploy_time,
-                    'pmerrorInfo': "Failed to connect vm from host."
-                }
-                result_str = json.dumps(result_json)
-                recv_num = connection.publish("%s:RESULT" % IP, result_str)
-                if recv_num < 1:
-                    print "Test Server may not recive cpu test error info at %s\n" % deploy_time
-                return False
-    stdin,stdout,stderr = ssh.exec_command('sysbench --threads=`cat /proc/cpuinfo | grep processor | wc -l`  --events=20000 cpu --cpu-max-prime=50000 run')
-    with open(vm_logname, "w") as vm_logfile:
-        vm_logfile.write(stdout.read())
-        vm_errorinfo = stderr.read()
-        if vm_errorinfo:
-            vm_logfile.write(vm_errorinfo)
-            print "vm run sysbench encounters error:\n", vm_errorinfo
-            result_json = {
-                'type': 'cpu',
-                'IP': IP,
-                'success': False,
-                'deployTime': deploy_time,
-                'vmerrorInfo': vm_errorinfo
-            }
-            result_str = json.dumps(result_json)
-            recv_num = connection.publish("%s:RESULT" % IP, result_str)
-            if recv_num < 1:
-                print "Test Server may not recive vm  cpu test error info at %s\n" % deploy_time
-            return False
-    # get result from log file
-    readproc = sp.Popen("cat %s | grep 'total time' | awk '{print $3}'" % logname, shell=True, stderr=sp.PIPE, stdout=sp.PIPE)
-    vm_readproc = sp.Popen("cat %s | grep 'total time' | awk '{print $3}'" % vm_logname, shell=True, stderr=sp.PIPE, stdout=sp.PIPE)
-    pm_out = readproc.communicate()
-    vm_out = vm_readproc.communicate()
-    pm_result = pm_out[0]
-    vm_result = vm_out[0]
-    print "pm result: ", pm_result, "vm_result: ", vm_result
-    if pm_result and vm_result:
-        pm_re= float(pm_result.strip('s\n'))
-        vm_re= float(vm_result.strip('s\n'))
-        # send result to server
-        result_json = {
-                'type': 'cpu',
-                'IP': IP,
-                'success': True,
-                'deployTime': deploy_time,
-                'pmresult': pm_re,
-                'vmresult': vm_re
-        }
-        result_str = json.dumps(result_json)
-        recv_num = connection.publish("%s:RESULT" % IP, result_str)
-        if recv_num < 1:
-            print "Test Server may not recive cpu test result at %s\n" % deploy_time
-        else:
-            print "Send %s cpu test result to test server.\n" % deploy_time
-        return True
-    else:
-        print "Extract result from %s cpu test log file encounters error!\n" % deploy_time
-        return False
-"""
-
-
 def virtualization_test(type, deploy_time, connection, IP, cpu_cores, mem):
+    """
+    virtualization_test function integrated all types of virtualization test, the type paramater is necessary to distinguish which
+    type of virtualization test should be executed. Otherwise, we will write each kind of virtualization test, such as, cpu_test, mem_test,
+    io_test etc, this is stupid.
+    """
     pm_logname = "/var/log/mario/"+"%s-" % type + deploy_time + ".log"
     vm_logname = "/var/log/mario/"+"vm-%s-" % type + deploy_time + ".log"
     # exec pm test first
@@ -476,86 +338,6 @@ def virtualization_test(type, deploy_time, connection, IP, cpu_cores, mem):
         print "pm %s test failed" % type
         return False
 
-def mem_test(deploy_time, connection, IP, cpu_cores, mem):
-    pm_logname = "/var/log/mario/"+"mem-"+deploy_time+".log"
-    vm_logname = "/var/log/mario/"+"vm-mem-"+deploy_time+".log"
-    # exec pm test first
-    if pm_test('mem', IP, deploy_time, pm_logname, connection):
-        mac_addr = generate_config('mem', mem, cpu_cores)
-        vm_ip = get_vm_ip('mem', IP, mac_addr, deploy_time, connection)
-        if vm_ip:
-            return vm_test('mem', vm_ip, IP, deploy_time, vm_logname, connection) and get_result('mem', IP, deploy_time, pm_logname, vm_logname, connection)
-        else:
-            print "get vm ip failed!"
-            return False
-    else:
-        print "pm mem test failed"
-        return False
-
-
-def io_test(time, connection, IP):
-    logname = "/var/log/mario/"+"io-"+time+".log"
-    errorinfo=''
-    # exec mem test
-    proc = sp.Popen('/usr/local/src/iozone3_465/src/current/iozone \
-                    -l `cat /proc/cpuinfo | grep processor | wc -l` \
-                    -u `cat /proc/cpuinfo | grep processor | wc -l` \
-                    -i 0 -i 1 -b %s' % logname, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
-    out = proc.communicate()
-    with open(logname, 'w') as logfile:
-        # stdout
-        if out[0]:
-            logfile.write(out[0])
-        # stderr, both write to logfile
-        if out[1]:
-            logfile.write(out[1])
-            errorinfo+=out[1]
-        if errorinfo:
-            # send error info to server
-            print errorinfo
-            result_json = {
-                'type': 'io',
-                'IP': IP,
-                'success': False,
-                'deployTime': time,
-                'pmerrorInfo': errorInfo
-            }
-            result_str = json.dumps(result_json)
-            recv_num = connection.publish("%s:RESULT" % IP, result_str)
-            if recv_num < 1:
-                print "Test Server may not recive io test error info at %s\n" % time
-            return False
-    # get result from log file
-    readproc = sp.Popen("cat %(logname)s | grep 'Initial write' | awk '{print $5}' && \
-                        cat %(logname)s | grep -e 'Rewrite'  -e 'Read' -e 'Re-read' | awk {'print $4}'" % {'logname': logname},
-                        shell=True, stderr=sp.PIPE, stdout=sp.PIPE)
-    pm_out = readproc.communicate()
-    result=''
-    result+=pm_out[0]
-    # print "result: ", result
-    if result:
-        result_num = [ float(num.strip()) for num in result.split() ]
-        # send result to server
-        result_json = {
-                'type': 'io',
-                'IP': IP,
-                'success': True,
-                'deployTime': time,
-                'pmInitialWrite': result_num[0],
-                'pmRewrite': result_num[1],
-                'pmRead': result_num[2],
-                'pmReRead': result_num[3]
-        }
-        result_str = json.dumps(result_json)
-        recv_num = connection.publish("%s:RESULT" % IP, result_str)
-        if recv_num < 1:
-            print "Test Server may not recive io test result at %s\n" % time
-        else:
-            print "Send %s io test result to test server.\n" % time
-        return True
-    else:
-        print "Extract result from %s io test log file encounters error!\n" % time
-        return False
 
 def terminateVM(type):
     """
@@ -576,6 +358,8 @@ def main():
         sys.stdout.write('Daemon alive! {}\n'.format(time.ctime()))
         time.sleep(10)
     """
+    # all paramiko connection will be logged here
+    paramiko.util.log_to_file("/var/log/mario/paramiko.log")
     # Get CPU and memory info
     cpu_cores = int(sp.check_output("cat /proc/cpuinfo | grep 'processor' | wc -l ", shell=True))
     mem =  int(float(sp.check_output("free -mh | grep Mem | awk '{print $2}'", shell=True).strip('G\n')))
