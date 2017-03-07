@@ -1,4 +1,4 @@
-# coding=utf-8 
+# coding=utf-8
 import fabric
 import os
 from fabric.api import execute, settings, run, abort, put, cd, env
@@ -7,7 +7,7 @@ from config import Config
 from threading import Thread
 from flask import g
 from . import db, conn
-from .models import Host, CPUResult, MemResult, IOResult 
+from .models import Host, CPUResult, MemResult, IOResult
 import redis
 from sqlalchemy.exc import IntegrityError
 import json
@@ -20,12 +20,12 @@ env.user = "root"
 #env.password = "root"
 baseimg = mountdir + "centos7-bk.img"
 basexml = mountdir + "host-base.xml"
-domaindfpy = mountdir + "domaindefine.py"
 redistar = mountdir + "redis-2.10.5.tar.gz"
 sysbenchtar = mountdir + "sysbench-1.0.1.tar.gz"
 iozonetar = mountdir + "iozone3_465.tar"
 streamtar = mountdir + "stream.tar"
 daemonpy = mountdir + "daemon.py"
+destroyvmpy = mountdir + "destroy_all_vms.py"
 client_rpm = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir,
                           'tools/moosefs-client-3.0.86-1.rhsystemd.x86_64.rpm'))
 
@@ -70,14 +70,11 @@ def prepareVM(host):
             if run("mfsmount %s -H %s" % (mountdir, mfsmaster)).failed:
                 abort("Failed to mount mfs filesystem")
             # after mounting moosefs, copy necessary files to workdir
-            # * domaindefine.py
             with cd(workdir):
-                if run("cp %s ." % domaindfpy).failed:
-                    abort("Failed to copy domaindefine.py")
                 if run("cp %s ." % daemonpy).failed:
                     abort("Failed to copy daemon.py")
-                if run("python daemon.py start --ip %s" %host).failed:
-                    abort("Falied to start daemon process")
+                if run("cp %s ." % destroyvmpy).failed:
+                    abort("Failed to copy destroy_all_vms.py")
                 # check if redis-py installed
                 if run("python -c 'import redis'").failed:
                     if run("cp %s ." % redistar).failed:
@@ -88,7 +85,12 @@ def prepareVM(host):
                     with cd("redis-2.10.5"):
                         if run("python setup.py install").failed:
                             abort("Failed to install redis-py")
-                # check if benchmarks exisit
+                # check if paramiko installed, paramiko must be installed manaually, because its environment is very complex(python2.6 install may differs from python2.7)
+                if run("python -c 'import paramiko'").failed:
+                    abort("Test Server must be installed paramiko!")
+                # After install redis-py and paramiko, daenon just run
+                if run("python daemon.py start --ip %s" %host).failed:
+                    abort("Falied to start daemon process")
                 # check if sysbench exists
                 if run("sysbench --version").failed:
                     if run("cp %s /usr/local/src/" % sysbenchtar).failed:
@@ -122,10 +124,6 @@ def prepareVM(host):
                 with cd("/usr/local/src/"):
                     if run("tar -xvf stream.tar").failed:
                         abort("Failed to decompress stream.tar")
-
-
-
-                            
             return True
 
 
@@ -148,6 +146,10 @@ def prepareTest(app, host, passwd):
 
 def clearhost():
     with settings(warn_only=True):
+        with cd(workdir):
+            # before umount mfs, must stop all the vms, because vm will use backend image on the mfs
+            if run("python destroy_all_vms.py").failed:
+                abort("Before unmouting mfs, can't destroy all the vms")
         with cd("/"):
             if run("df -Th | grep %s" % Config.MFS_MASTER).succeeded:
                 if run("umount %s" % Config.MFS_MOUNT_POINT).failed:
@@ -178,22 +180,37 @@ def collect_result(app):
                 message_json = json.loads(message['data'])
                 if message_json['type'] == 'cpu':
                     if message_json['success']:
-                        print 'starts storing cpu result ...'
-                        result = CPUResult(IP=message_json['IP'], success=message_json['success'], pmresult=message_json['pmresult'], deployTime=message_json['deployTime'])
+                        print 'starts storing cpu test result ...'
+                        result = CPUResult(IP=message_json['IP'], success=message_json['success'], pmresult=message_json['pmresult'], 
+                        vmresult=message_json['vmresult'], deployTime=message_json['deployTime'])
                     else:
-                        result = CPUResult(IP=message_json['IP'], success=message_json['success'], pmerrorInfo=message_json['pmerrorInfo'], deployTime=message_json['deployTime'])
+                        print 'starts storing cpu test error information ...'
+                        result = CPUResult(IP=message_json['IP'], success=message_json['success'], deployTime=message_json['deployTime'],
+                        pmerrorInfo=message_json['pmerrorInfo'] if 'pmerrorInfo' in message_json else None, 
+                        vmerrorInfo=message_json['vmerrorInfo'] if 'vmerrorInfo' in message_json else None, )
                 elif message_json['type'] == 'mem':
                     if message_json['success']:
-                        result = MemResult(IP=message_json['IP'], success=message_json['success'], pmresult=message_json['pmresult'], deployTime=message_json['deployTime'])
+                        print 'starts storing mem test result ...'
+                        result = MemResult(IP=message_json['IP'], success=message_json['success'], pmresult=message_json['pmresult'],
+                        vmresult=message_json['vmresult'], deployTime=message_json['deployTime'])
                     else:
-                        result = MemResult(IP=message_json['IP'], success=message_json['success'], pmerrorInfo=message_json['pmerrorInfo'], deployTime=message_json['deployTime'])
+                        print 'starts storing mem test error information ...'
+                        result = MemResult(IP=message_json['IP'], success=message_json['success'], deployTime=message_json['deployTime'],
+                        pmerrorInfo=message_json['pmerrorInfo'] if 'pmerrorInfo' in message_json else None, 
+                        vmerrorInfo=message_json['vmerrorInfo'] if 'vmerrorInfo' in message_json else None, )
                 elif message_json['type'] == 'io':
                     if message_json['success']:
+                        print 'starts storing io test result ...'
                         result = IOResult(IP=message_json['IP'], success=message_json['success'], deployTime=message_json['deployTime'],
                                         pmInitialWrite=message_json['pmInitialWrite'], pmRewrite=message_json['pmRewrite'],
-                                        pmRead=message_json['pmRead'], pmReRead=message_json['pmReRead'])
+                                        pmRead=message_json['pmRead'], pmReRead=message_json['pmReRead'],
+                                        vmInitialWrite=message_json['vmInitialWrite'], vmRewrite=message_json['vmRewrite'],
+                                        vmRead=message_json['vmRead'], vmReRead=message_json['vmReRead'])
                     else:
-                        result = IOResult(IP=message_json['IP'], success=message_json['success'], pmerrorInfo=message_json['pmerrorInfo'], deployTime=message_json['deployTime'])
+                        print 'starts storing io test error information ...'
+                        result = IOResult(IP=message_json['IP'], success=message_json['success'], deployTime=message_json['deployTime'],
+                        pmerrorInfo=message_json['pmerrorInfo'] if 'pmerrorInfo' in message_json else None, 
+                        vmerrorInfo=message_json['vmerrorInfo'] if 'vmerrorInfo' in message_json else None, )
                 # store the result
                 try:
                     db.session.add(result)
@@ -216,7 +233,7 @@ def collect_result(app):
                     deleted_hosts.append(hosts_dict[id])
             # subscribe newly added hosts and unsubscribe deleted hosts
             if newly_add_hosts:
-                for host_ip in newly_add_hosts:    
+                for host_ip in newly_add_hosts:
                     p.subscribe("%s:RESULT" % host_ip)
             if deleted_hosts:
                 for host_ip in deleted_hosts:
@@ -276,14 +293,6 @@ def defineVM(vmnum=1, existvmnum=0, **vmpara):
                     --i
                 abort("Failed to create %d vm image(s)." % vmnum)
 
-
-def createVM():
-    """
-    VM configuration:
-        * Dynamically allocate IP to the VM(multiple VMs, if other PM has VM allocated, the IP pool should be shared)
-        * successfully start vm, and check if it can ping to the host
-    param: VM num to start
-    """
 
 
 def checkVMnum():

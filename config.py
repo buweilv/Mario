@@ -10,7 +10,7 @@ class Config:
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     SQLALCHEMY_TRACK_MODIFICATIONS = True
     # The tested PM's work dir
-    WORK_DIR = os.environ.get('WORK_DIR') or '/mario'
+    WORK_DIR = os.environ.get('WORK_DIR') or '/mario/'
     # The tested PM's moosefs mount point
     MFS_MOUNT_POINT = os.environ.get('MFS_MOUNT_POINT') or '/mnt/mfs/'
     MFS_MASTER = os.environ.get('MFS_MASTER') or '10.214.144.233'
