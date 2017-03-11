@@ -1,6 +1,6 @@
 from flask import render_template, redirect, url_for, request, jsonify, g, current_app
 from .. import db, socketio, conn
-from ..models import Host
+from ..models import Host, CPUResult, MemResult, IOResult
 from . import main
 from ..vmutils import prepareTest, rmhost, collect_result
 from flask_socketio import emit, disconnect
@@ -204,6 +204,38 @@ def add_host():
             return jsonify({'input_ok': 'host already added'})
     else:
         return jsonify({'input_ok': 'empty field'})
+
+@main.route('/_get_cpu_result')
+def get_cpu_result():
+    id = request.args.get('id')
+    print id
+    cpu_result = CPUResult.query.filter_by(id=id).first()
+    return jsonify({'type': "cpu",
+                    'deployTime': cpu_result.deployTime,
+                    'IP': cpu_result.IP,
+                    'pmresult': cpu_result.pmresult,
+                    'vmresult': cpu_result.vmresult})
+
+@main.route('/_get_mem_result')
+def get_mem_result():
+    id = request.args.get('id')
+    mem_result = MemResult.query.filter_by(id=id).first()
+    return jsonify({'type': "mem",
+                    'deployTime': mem_result.deployTime,
+                    'IP': mem_result.IP,
+                    'pmresult': mem_result.pmresult,
+                    'vmresult': mem_result.vmresult})
+
+@main.route('/_view_results')
+def view_results():
+    results = []
+    cpu_results = CPUResult.query.all()
+    mem_results = MemResult.query.all()
+    io_results = IOResult.query.all()
+    results.extend(cpu_results)
+    results.extend(mem_results)
+    results.extend(io_results)
+    return render_template('result.html', results=results, async_mode=socketio.async_mode)
 
 
 @socketio.on('connect', namespace='/hostinfo')

@@ -1,5 +1,8 @@
 # coding=utf-8
 from . import db
+from sqlalchemy.exc import IntegrityError
+from random import seed, randint
+import forgery_py
 
 
 class Host(db.Model):
@@ -12,10 +15,6 @@ class Host(db.Model):
 
     @staticmethod
     def generate_fake(count=100):
-        from sqlalchemy.exc import IntegrityError
-        from random import seed, randint
-        import forgery_py
-
         status = ['managed', 'disconnect', 'ready']
         """
             managed: ip 密码验证通过
@@ -38,15 +37,31 @@ class Host(db.Model):
 
 class CPUResult(db.Model):
     __tablename__ = "cpuresults"
-    # result: sysbench run total time (s) 
+    # result: sysbench run total time (s)
     id = db.Column(db.Integer, primary_key=True)
     IP = db.Column(db.String(64))
+    type = db.Column(db.String(64), default='cpu')
     deployTime = db.Column(db.String(64))
     success = db.Column(db.Boolean)
     pmresult = db.Column(db.Float, default=0)
     pmerorInfo = db.Column(db.Text, nullable=True)
     vmresult = db.Column(db.Float, default=0)
     vmerorInfo = db.Column(db.Text, nullable=True)
+
+    @staticmethod
+    def generate_fake(count=50):
+        seed()
+        for i in range(count):
+            result = CPUResult(IP=forgery_py.internet.ip_v4(),
+                        success = True,
+                        deployTime = forgery_py.date.date().strftime('%Y-%m-%d'),
+                        pmresult=forgery_py.lorem_ipsum.word(),
+                        vmresult=forgery_py.lorem_ipsum.word())
+            db.session.add(host)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
 
     def __repr__(self):
         error_message = ""
@@ -65,6 +80,7 @@ class MemResult(db.Model):
     # result: Traid throughput 10 times average (MB/s)
     id = db.Column(db.Integer, primary_key=True)
     IP = db.Column(db.String(64))
+    type = db.Column(db.String(64), default='mem')
     deployTime = db.Column(db.String(64))
     success = db.Column(db.Boolean)
     pmresult = db.Column(db.Float, default=0)
@@ -89,6 +105,7 @@ class IOResult(db.Model):
     # result: Initial write, Rewrite, read, reread mode speed (kb/s)
     id = db.Column(db.Integer, primary_key=True)
     IP = db.Column(db.String(64))
+    type = db.Column(db.String(64), default='io')
     deployTime = db.Column(db.String(64))
     success = db.Column(db.Boolean)
     pmInitialWrite = db.Column(db.Float, default=0)

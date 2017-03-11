@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/jquery.dataTables.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dataTables.checkboxes.css') }}">
+{% endblock %}
+
+{% block page_header %}Test Results{% endblock %}
+{% block nav_lis %}
+<li>
+    <a href="{{ url_for('main.index') }}">
+        <i class="material-icons">dashboard</i>
+        <p>Dashboard</p>
+    </a>
+</li>
+<li class="active">
+    <a href="{{ url_for('main.view_results') }}">
+        <i class="material-icons">content_paste</i>
+        <p>Test Results</p>
+    </a>
+</li>
+{% endblock %}
+{% block page_content %}
+<div class="content">
+  <div class="container-fluid">
+  <!--<br/>-->
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header" data-background-color="blue">
+            <h4 class="title">Test Results</h4>
+            <p class="category">Here displays virtualization test results</p>
+             <button type="button" id="cpu-btn" class="btn btn-info"><i class="material-icons">developer_board</i>generate charts</button>
+             <button type="button" id="delhost-btn" class="btn btn-info"><i class="material-icons">delete_forever</i>Del</button>
+          </div>
+          <div class="card-content table-responsive">
+            <table class="display" id="dataTables-results">
+               <thead class="text-info">
+                  <tr>
+                    <th></th>
+                    <th>IP Address</th>
+                    <th>Type</th>
+                    <th>Deploy time</th>
+                    <th>Status</th>
+                    <th>Operations</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- for -->
+                  {% for result in results %}
+                    <tr id= {{ result.type }}{{ result.id }} class="gradeA odd" role="row">
+                      <td>{{ result.type }}{{ result.id }}</td>
+                      <td name="ip">{{ result.IP }}</td>
+                      <td>{{ result.type }}</td>
+                      <td>{{ result.deployTime }}</td>
+                      {% if result.success %}
+                        <td><i class="material-icons">offline_pin</i></td>
+                      {% else %}
+                        <td><i class="material-icons">info</i></td>
+                      {% endif %}
+                      <td><button type="buttuon" class="btn btn-info btn-view btn-fab btn-fab-mini btn-round"><i class="material-icons">visibility</i></button></td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+            </table>
+            <form id="form-hosts"></form>
+          </div>
+          <!-- end of card-content-->
+        </div>
+        <!-- end of card -->
+      </div>
+      <!-- end of col-md-12 -->
+    </div>
+    <!-- end of row -->
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header card-header-icon" data-background-color="blue">
+                    <i class="material-icons">insert_chart</i>
+                </div>
+                <div class="card-content">
+                    <div id="panel0" style="width: 100%;height:300px;"></div>
+                </div>
+            </div>
+        </div>
+    
+    
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header card-header-icon" data-background-color="red">
+                    <i class="material-icons">insert_chart</i>
+                </div>
+                <div class="card-content">
+                    <div id="panel1" style="width: 100%;height:300px;"></div>
+                </div>
+            </div>
+        </div>
+    
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header card-header-icon" data-background-color="rose">
+                    <i class="material-icons">insert_chart</i>
+                </div>
+                <div class="card-content">
+                    <div id="panel2" style="width: 100%;height:300px;"></div>
+                </div>
+            </div>
+        </div>
+    
+    </div>
+    <!-- end of row -->
+  </div>
+  <!-- end of container-fluid -->
+</div>
+<!-- end of content -->
+   
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/jquery.dataTables.js') }}"></script>
+<script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/result.js') }}"></script>
+<script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/dataTables.checkboxes.js') }}"></script>
+<script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>
+<script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/drawChart.js') }}"></script>
+{% endblock %}
+

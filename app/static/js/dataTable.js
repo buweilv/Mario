@@ -18,10 +18,16 @@ $(document).ready(function(){
 
     $.func = {
         notification: function(info, text) {
+        /*
             var nof = document.createElement('div');
             nof.setAttribute('class','alert alert-dismissable ' + info);
             nof.innerHTML = '<button type="button" class="close" data-dismiss="alert">&times;</button>' + text;
             $('#notification').append(nof);
+        */
+        swal({
+            title: "Add Host",
+            type: info,
+            text: text})
         }
     }
 
@@ -39,22 +45,22 @@ $(document).ready(function(){
             dataType: 'json'
             }).done(function(data){
                 if (data.input_ok === 'invalid hostname') {
-                    $.func.notification('alert-danger', 'invalid hostname');
+                    $.func.notification('error', 'invalid hostname');
                     console.log('invalid hostname.');
                 } else if (data.input_ok === 'auth failed'){
-                    $.func.notification('alert-danger', 'auth fialed');
+                    $.func.notification('error', 'auth fialed');
                     console.log('auth failed.');
                 } else if (data.input_ok === 'database failed'){
-                    $.func.notification('alert-danger', 'database failed');
+                    $.func.notification('error', 'database failed');
                     console.log('database failed.');
                 } else if (data.input_ok === 'host already added'){
-                    $.func.notification('alert-danger', 'Host Already added');
+                    $.func.notification('warning', 'Host Already added');
                     console.log('host already added.');
                 } else if (data.input_ok === 'empty field'){
-                    $.func.notification('alert-danger', 'Empty Field!');
+                    $.func.notification('info', 'Empty Field!');
                     console.log('empty field.');
                 } else if(data.input_ok === 'check the machine if ready') {
-                    $.func.notification('alert-danger', 'Check the machine, it should be ready for SSH connection')
+                    $.func.notification('error', 'Check the machine, it should be ready for SSH connection')
                     console.log('check the machine if ready')
                 } else if(data.input_ok === 'host added success') {
                     var rowNode = table.row.add( [
@@ -66,7 +72,7 @@ $(document).ready(function(){
                     $(rowNode).attr('id', data.id)
                     childNode = $(rowNode).children('td').eq(1)
                     childNode.attr('name', 'ip')
-                    $.func.notification('alert-success', 'Host added successfully!')
+                    $.func.notification('success', 'Host added successfully!')
                     console.log('host added success')
                 } else {
                     console.log('input successfully handled!'); // for debug
