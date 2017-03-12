@@ -5,15 +5,17 @@ $(document).ready(function(){
                 text: data.type+" test@"+data.deployTime
             },
             toolbox: {
+                show: true,
                 feature: {
                     saveAsImage: {
-                        pixelRatio: 2
+                        show: true
                         }
                 }
             },
             tooltip: {},
             legend: {
-                data: ['pmresult', 'vmresult']
+                data: ['pmresult', 'vmresult'],
+                y: "bottom"
             },
             xAxis: {
                 data: ["run time"]
@@ -22,11 +24,39 @@ $(document).ready(function(){
             series: [{
                 "name": "pmresult",
                 "type": "bar",
+                barWidth: 40, 
+                "itemStyle": {
+                    normal: {
+                        label: {
+                        show : true,
+                        position: 'top',
+                        textStyle: {
+                            fontSize : '10',
+                            fontFamily : '微软雅黑',
+                            fontWeight : 'bold'
+                            }
+                        }
+                    }
+                },
                 "data": [data.pmresult]
             },
             {
                 "name": "vmresult",
                 "type": "bar",
+                barWidth: 40, 
+                "itemStyle": {
+                    normal: {
+                        label: {
+                        show : true,
+                        position: 'top',
+                        textStyle: {
+                            fontSize : '10',
+                            fontFamily : '微软雅黑',
+                            fontWeight : 'bold'
+                            }
+                        }
+                    }
+                },
                 "data": [data.vmresult]
             }
             ]
