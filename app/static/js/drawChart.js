@@ -126,24 +126,63 @@ $(document).ready(function(){
             console.log("Failed: " + xhr.status + ', Result: ' + status)
         })
     }
+
+    function draw_first_three_charts() {
     // draw first three results' charts
     first_three_results = $('tbody tr').filter(function(){
         return $(this).find("td:eq(4) i").text() === "offline_pin"
     }).slice(0,3);
     first_three_results.each(function(index){
         if ($(this).find("td:eq(2)").text() === "cpu") {
-            id = parseInt($(this).attr('id').substring(3));
+            id = parseInt($(this).attr('id').substring(4));
             draw_chart_on_panel("cpu", id, index);      
             }
         else if ($(this).find("td:eq(2)").text() === "mem") {
-            id = parseInt($(this).attr('id').substring(3));
+            id = parseInt($(this).attr('id').substring(4));
             draw_chart_on_panel("mem", id, index);           
             }
         else if ($(this).find("td:eq(2)").text() === "io") {
-            id = parseInt($(this).attr('id').substring(2));
+            id = parseInt($(this).attr('id').substring(3));
             draw_chart_on_panel("io", id, index);           
             }
         else
             alert("wrong type when draw chart on panel!")
     })
+    }
+
+    // when the page load, draw first three charts
+    draw_first_three_charts()
+    // when the refresh button triggerred, refresh the newest first three charts
+    $("#refresh-btn").click(draw_first_three_charts);
+
+    // button used to draw chart on panel0
+    $(".btn-panel0").click(function(){
+        var type = $(this).parent().parent().find("td:eq(2)").text();
+        if (type === "cpu" || type === "mem")
+            var id = parseInt($(this).parent().parent().attr('id').substring(4))
+        else if (type === "io")
+            var id = parseInt($(this).parent().parent().attr('id').substring(3))
+        draw_chart_on_panel(type, id, 0)
+    });
+     // button used to draw chart on panel1
+    $(".btn-panel1").click(function(){
+        var type = $(this).parent().parent().find("td:eq(2)").text();
+        if (type === "cpu" || type === "mem")
+            var id = parseInt($(this).parent().parent().attr('id').substring(4))
+        else if (type === "io")
+            var id = parseInt($(this).parent().parent().attr('id').substring(3))
+        draw_chart_on_panel(type, id, 1)
+    });
+     // button used to draw chart on panel2
+    $(".btn-panel2").click(function(){
+        var type = $(this).parent().parent().find("td:eq(2)").text();
+        if (type === "cpu" || type === "mem")
+            var id = parseInt($(this).parent().parent().attr('id').substring(4))
+        else if (type === "io")
+            var id = parseInt($(this).parent().parent().attr('id').substring(3))
+        draw_chart_on_panel(type, id, 2)
+    });
+
+
 })
+

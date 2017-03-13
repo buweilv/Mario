@@ -65,6 +65,27 @@ def del_hosts():
     return jsonify({'ok': True})
 
 
+@main.route('/_del_results', methods=['POST'])
+def del_results():
+    print request.form.items()  # debug info: print the to be deleted hosts
+    for item in request.form.items():
+        print "item is", item
+        type, id = item[1].split('_')
+        if type == 'cpu':
+            dl_result = CPUResult.query.filter_by(id=int(id)).first()
+        elif type == 'mem':
+            dl_result = MemResult.query.filter_by(id=int(id)).first()
+        if type == 'io':
+            dl_result = IOResult.query.filter_by(id=int(id)).first()
+        db.session.delete(dl_result)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'ok': False})
+    return jsonify({'ok': True})
+    
+
 @main.route('/_cpu_test',methods=['POST'])
 def cpu_test():
     print request.form.items() # debug info: print the cpu test hosts
@@ -210,39 +231,59 @@ def get_cpu_result():
     id = request.args.get('id')
     print id
     cpu_result = CPUResult.query.filter_by(id=id).first()
-    return jsonify({'type': "cpu",
-                    'deployTime': cpu_result.deployTime,
-                    'IP': cpu_result.IP,
-                    'pmresult': cpu_result.pmresult,
-                    'vmresult': cpu_result.vmresult})
+    if cpu_result.success:
+        return jsonify({'type': "cpu",
+                        'deployTime': cpu_result.deployTime,
+                        'IP': cpu_result.IP,
+                        'pmresult': cpu_result.pmresult,
+                        'vmresult': cpu_result.vmresult})
+    else:
+        return jsonify({'type': "cpu",
+                        'deployTime': cpu_result.deployTime,
+                        'IP': cpu_result.IP,
+                        'pmerrorInfo': cpu_result.pmerrorInfo,
+                        'vmerrorInfo': cpu_result.vmerrorInfo})
 
 @main.route('/_get_mem_result')
 def get_mem_result():
     id = request.args.get('id')
     mem_result = MemResult.query.filter_by(id=id).first()
-    return jsonify({'type': "mem",
-                    'deployTime': mem_result.deployTime,
-                    'IP': mem_result.IP,
-                    'pmresult': mem_result.pmresult,
-                    'vmresult': mem_result.vmresult})
+    if mem_result.success:
+        return jsonify({'type': "mem",
+                        'deployTime': mem_result.deployTime,
+                        'IP': mem_result.IP,
+                        'pmresult': mem_result.pmresult,
+                        'vmresult': mem_result.vmresult})
+    else:
+        return jsonify({'type': "mem",
+                        'deployTime': mem_result.deployTime,
+                        'IP': mem_result.IP,
+                        'pmerrorInfo': mem_result.pmerrorInfo,
+                        'vmerrorInfo': mem_result.vmerrorInfo})
 
 
 @main.route('/_get_io_result')
 def get_io_result():
     id = request.args.get('id')
     io_result = IOResult.query.filter_by(id=id).first()
-    return jsonify({'type': "io",
-                    'deployTime': io_result.deployTime,
-                    'IP': io_result.IP,
-                    'pmInitialWrite': io_result.pmInitialWrite,
-                    'pmRewrite': io_result.pmRewrite,
-                    'pmRead': io_result.pmRead,
-                    'pmReRead': io_result.pmReRead,
-                    'vmInitialWrite': io_result.vmInitialWrite,
-                    'vmRewrite': io_result.vmRewrite,
-                    'vmRead': io_result.vmRead,
-                    'vmReRead': io_result.vmReRead
-                    })
+    if io_result.success:
+        return jsonify({'type': "io",
+                        'deployTime': io_result.deployTime,
+                        'IP': io_result.IP,
+                        'pmInitialWrite': io_result.pmInitialWrite,
+                        'pmRewrite': io_result.pmRewrite,
+                        'pmRead': io_result.pmRead,
+                        'pmReRead': io_result.pmReRead,
+                        'vmInitialWrite': io_result.vmInitialWrite,
+                        'vmRewrite': io_result.vmRewrite,
+                        'vmRead': io_result.vmRead,
+                        'vmReRead': io_result.vmReRead})
+    else:
+        return jsonify({'type': "io",
+                        'deployTime': io_result.deployTime,
+                        'IP': io_result.IP,
+                        'pmerrorInfo': io_result.pmerrorInfo,
+                        'vmerrorInfo': io_result.vmerrorInfo})
 
 
 @main.route('/_view_results')

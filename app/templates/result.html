@@ -32,8 +32,8 @@
           <div class="card-header" data-background-color="blue">
             <h4 class="title">Test Results</h4>
             <p class="category">Here displays virtualization test results</p>
-             <button type="button" id="cpu-btn" class="btn btn-info"><i class="material-icons">developer_board</i>generate charts</button>
-             <button type="button" id="delhost-btn" class="btn btn-info"><i class="material-icons">delete_forever</i>Del</button>
+             <button type="button" id="refresh-btn" class="btn btn-info"><i class="material-icons">autorenew</i>refresh charts</button>
+             <button type="button" id="delresult-btn" class="btn btn-info"><i class="material-icons">delete_forever</i>Del</button>
           </div>
           <div class="card-content table-responsive">
             <table class="display" id="dataTables-results">
@@ -50,9 +50,9 @@
                 <tbody>
                   <!-- for -->
                   {% for result in results %}
-                    <tr id= {{ result.type }}{{ result.id }} class="gradeA odd" role="row">
+                    <tr id= {{ result.type }}_{{ result.id }} class="gradeA odd" role="row">
                       <td>{{ result.type }}{{ result.id }}</td>
-                      <td name="ip">{{ result.IP }}</td>
+                      <td>{{ result.IP }}</td>
                       <td>{{ result.type }}</td>
                       <td>{{ result.deployTime }}</td>
                       {% if result.success %}
@@ -61,16 +61,15 @@
                         <td><i class="material-icons">info</i></td>
                       {% endif %}
                       <td>
-                        <button type="buttuon" class="btn btn-info btn-xs"><i class="material-icons">insert_chart</i></button>
-                        <button type="buttuon" class="btn btn-danger btn-xs"><i class="material-icons">insert_chart</i></button>
-                        <button type="buttuon" class="btn btn-xs"><i class="material-icons">insert_chart</i></button>
-                        <button type="buttuon" class="btn btn-xs"><i class="material-icons">get_app</i></button>
+                        <button type="buttuon" class="btn btn-info btn-xs btn-panel0"><i class="material-icons">insert_chart</i></button>
+                        <button type="buttuon" class="btn btn-danger btn-xs btn-panel1"><i class="material-icons">insert_chart</i></button>
+                        <button type="buttuon" class="btn btn-xs btn-panel2"><i class="material-icons">insert_chart</i></button>
                       </td>
                     </tr>
                   {% endfor %}
                 </tbody>
             </table>
-            <form id="form-hosts"></form>
+            <form id="form-results"></form>
           </div>
           <!-- end of card-content-->
         </div>
@@ -130,5 +129,6 @@
 <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/dataTables.checkboxes.js') }}"></script>
 <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>
 <script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/drawChart.js') }}"></script>
+<script type="text/javascript" charset="utf-8" src="{{ url_for('static', filename='js/downloadcsv.js') }}"></script>
 {% endblock %}
 
