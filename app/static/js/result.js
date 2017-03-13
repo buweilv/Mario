@@ -8,11 +8,12 @@ $(document).ready(function(){
         'checkboxes': {
             'selectRow': true
             }
-        }
+        },
+        { "width": "20%", "targets": 5}
     ],
         'select': {
             'style': 'multi'
         },
-        'order': [[1, 'asc']]
+        'order': [[3, 'desc']]
     });
 })

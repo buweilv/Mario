@@ -12,7 +12,6 @@
 
 <!--  Material Dashboard css    -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/material-dashboard.css') }}">
-<!--<link rel="stylesheet" href="{{ url_for('static', filename='css/material-kit.css') }}">-->
 <!-- Sweetalert css  -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/sweetalert.css') }}">
 
@@ -24,7 +23,7 @@
 
 {% block body %}
     <div class="wrapper">
-        <div class="sidebar" data-color="blue" data-image="{{ url_for('static', filename='images/sidebar-3.jpg') }}">
+        <div class="sidebar" data-color="blue" data-background-color="white" data-image="{{ url_for('static', filename='images/sidebar-3.jpg') }}">
             <!--
                 Tip 1: You can change the color of the sidebar using: data-color="purple | blue | green | orange | red"
 

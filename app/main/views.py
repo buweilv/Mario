@@ -226,6 +226,25 @@ def get_mem_result():
                     'pmresult': mem_result.pmresult,
                     'vmresult': mem_result.vmresult})
 
+
+@main.route('/_get_io_result')
+def get_io_result():
+    id = request.args.get('id')
+    io_result = IOResult.query.filter_by(id=id).first()
+    return jsonify({'type': "io",
+                    'deployTime': io_result.deployTime,
+                    'IP': io_result.IP,
+                    'pmInitialWrite': io_result.pmInitialWrite,
+                    'pmRewrite': io_result.pmRewrite,
+                    'pmRead': io_result.pmRead,
+                    'pmReRead': io_result.pmReRead,
+                    'vmInitialWrite': io_result.vmInitialWrite,
+                    'vmRewrite': io_result.vmRewrite,
+                    'vmRead': io_result.vmRead,
+                    'vmReRead': io_result.vmReRead
+                    })
+
+
 @main.route('/_view_results')
 def view_results():
     results = []

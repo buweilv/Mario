@@ -17,11 +17,17 @@ $(document).ready(function(){
                 data: ['pmresult', 'vmresult'],
                 y: "bottom"
             },
-            xAxis: {
-                data: ["run time"]
-            },
-            yAxis: {},
-            series: [{
+            yAxis: {}
+        };
+
+        if (data.type === "cpu" || data.type === "mem"){
+            if (data.type === "cpu"){
+            option.xAxis = { data: ["run time(s)"]};
+            }
+            else if (data.type === "mem"){
+            option.xAxis = { data: ["Throughput(MB/s)"]};
+            }
+            option.series = [{
                 "name": "pmresult",
                 "type": "bar",
                 barWidth: 40, 
@@ -59,8 +65,51 @@ $(document).ready(function(){
                 },
                 "data": [data.vmresult]
             }
-            ]
-         };
+            ];
+        } else if (data.type === "io"){
+            option.xAxis = { data: ["Write", "Rewrite", "Read", "ReRead"]};
+            option.series = [{
+                "name": "pmresult",
+                "type": "bar",
+                barWidth: 40, 
+                "itemStyle": {
+                    normal: {
+                        label: {
+                        show : true,
+                        position: 'top',
+                        textStyle: {
+                            fontSize : '10',
+                            fontFamily : '微软雅黑',
+                            fontWeight : 'bold'
+                            }
+                        }
+                    }
+                },
+                "data": [data.pmInitialWrite, data.pmRewrite, data.pmRead, data.pmReRead]
+            },
+            {
+                "name": "vmresult",
+                "type": "bar",
+                barWidth: 40, 
+                "itemStyle": {
+                    normal: {
+                        label: {
+                        show : true,
+                        position: 'top',
+                        textStyle: {
+                            fontSize : '10',
+                            fontFamily : '微软雅黑',
+                            fontWeight : 'bold'
+                            }
+                        }
+                    }
+                },
+                "data": [data.vmInitialWrite, data.vmRewrite, data.vmRead, data.vmReRead]
+            }
+            ];
+
+        
+        }
         chart.setOption(option);
     }
 
