@@ -1,0 +1,2 @@
+moosefs-client-3.0.86-1.rhsystemd.x86_64.rpm 是el7上的包
+moosefs-client-3.0.88-1.rhsysv.x86_64.rpm 是el6上的包

@@ -3,5 +3,4 @@
 tools/*.gz
 tools/*.xz
 tools/*.tar
-tools/*.rpm
 *.swp
