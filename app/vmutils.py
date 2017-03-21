@@ -26,9 +26,10 @@ iozonetar = mountdir + "iozone3_465.tar"
 streamtar = mountdir + "stream.tar"
 daemonpy = mountdir + "daemon.py"
 destroyvmpy = mountdir + "destroy_all_vms.py"
-client_rpm = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir,
+client6_rpm = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir,
+                          'tools/moosefs-client-3.0.88-1.rhsysv.x86_64.rpm'))
+client7_rpm = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir,
                           'tools/moosefs-client-3.0.86-1.rhsystemd.x86_64.rpm'))
-
 
 def prepareVM(host):
     """
@@ -54,17 +55,30 @@ def prepareVM(host):
                 run("mkdir /var/log/mario")
             # print "After first run - fabric.state.connections: ", fabric.state.connections
             if run("rpm -qa | grep moosefs-client").failed:
-                if put(client_rpm, workdir).failed:
-                    abort("Failed to put MooseFS-client rpm package to ")
                 if run("rpm -qa | grep fuse").failed:
                     if run("yum install fuse fuse-libs -y").failed:
                         abort("Failed to install fuse")
-                with cd(workdir):
-                    if run("rpm -ivh moosefs-client-3.0.86-1.rhsystemd.x86_64.rpm").failed:
-                        abort("Failed to install moosefs-client")
-            if run("systemctl status firewalld.service").succeeded:
-                if run("systemctl stop firewalld.service && systemctl disable firewalld.service").failed:
-                    abort("Failed to disable iptable")
+                if run("grep -q -i 'release 6' /etc/redhat-release").succeeded:
+                    if put(client6_rpm, workdir).failed:
+                        abort("Failed to put MooseFS-client rpm package to ")
+                    with cd(workdir):
+                        if run("rpm -ivh moosefs-client-3.0.88-1.rhsysv.x86_64.rpm").failed:
+                            abort("Failed to install moosefs-client")
+                elif run("grep -q -i 'release 7' /etc/redhat-release").succeeded:
+                    if put(client7_rpm, workdir).failed:
+                        abort("Failed to put MooseFS-client rpm package to ")
+                    with cd(workdir):
+                        if run("rpm -ivh moosefs-client-3.0.86-1.rhsystemd.x86_64.rpm").failed:
+                            abort("Failed to install moosefs-client")
+            # deal with firewall on rhel6 or rhel7
+            if run("grep -q -i 'release 6' /etc/redhat-release").succeeded:
+                if run("service iptables status").succeeded:
+                    if run("service iptables stop").failed:
+                        abort("Failed to disable iptable")
+            elif run("grep -q -i 'release 7' /etc/redhat-release").succeeded:
+                if run("systemctl status firewalld.service").succeeded:
+                    if run("systemctl stop firewalld.service && systemctl disable firewalld.service").failed:
+                        abort("Failed to disable iptable")
             if run("test -d %s" % mountdir).failed:
                 run("mkdir %s" % mountdir)
             if run("mfsmount %s -H %s" % (mountdir, mfsmaster)).failed:
