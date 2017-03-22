@@ -160,22 +160,19 @@ def prepareTest(app, host, passwd):
 
 def clearhost():
     with settings(warn_only=True):
-        with cd(workdir):
-            # before umount mfs, must stop all the vms, because vm will use backend image on the mfs
-            if run("python2.7 destroy_all_vms.py").failed:
-                abort("Before unmouting mfs, can't destroy all the vms")
+        if run("python2.7 daemon.py status").succeeded:
+            with cd("%s" % Config.WORK_DIR):
+                # before umount mfs, must stop all the vms, because vm will use backend image on the mfs
+                if run("python2.7 destroy_all_vms.py").failed:
+                    abort("Before unmouting mfs, can't destroy all the vms")
+                run("python2.7 daemon.py stop")
         with cd("/"):
             if run("df -Th | grep %s" % Config.MFS_MASTER).succeeded:
                 if run("umount %s" % Config.MFS_MOUNT_POINT).failed:
                     abort("Failed to umount mfs")
             if run("test -d %s" % Config.WORK_DIR).succeeded:
-                # stop daemon
-                with cd("%s" % Config.WORK_DIR):
-                    if run("python2.7 daemon.py status").succeeded:
-                        run("python2.7 daemon.py stop")
-                with cd("/"):
-                    if run("rm -rf %s" % Config.WORK_DIR).failed:
-                        abort("Failed to remove %s" % Config.WORK_DIR)
+                if run("rm -rf %s" % Config.WORK_DIR).failed:
+                    abort("Failed to remove %s" % Config.WORK_DIR)
     return True
 
 def collect_result(app):
@@ -195,12 +192,12 @@ def collect_result(app):
                 if message_json['type'] == 'cpu':
                     if message_json['success']:
                         print 'starts storing cpu test result ...'
-                        result = CPUResult(IP=message_json['IP'], success=message_json['success'], pmresult=message_json['pmresult'], 
+                        result = CPUResult(IP=message_json['IP'], success=message_json['success'], pmresult=message_json['pmresult'],
                         vmresult=message_json['vmresult'], deployTime=message_json['deployTime'])
                     else:
                         print 'starts storing cpu test error information ...'
                         result = CPUResult(IP=message_json['IP'], success=message_json['success'], deployTime=message_json['deployTime'],
-                        pmerrorInfo=message_json['pmerrorInfo'] if 'pmerrorInfo' in message_json else None, 
+                        pmerrorInfo=message_json['pmerrorInfo'] if 'pmerrorInfo' in message_json else None,
                         vmerrorInfo=message_json['vmerrorInfo'] if 'vmerrorInfo' in message_json else None, )
                 elif message_json['type'] == 'mem':
                     if message_json['success']:
@@ -210,7 +207,7 @@ def collect_result(app):
                     else:
                         print 'starts storing mem test error information ...'
                         result = MemResult(IP=message_json['IP'], success=message_json['success'], deployTime=message_json['deployTime'],
-                        pmerrorInfo=message_json['pmerrorInfo'] if 'pmerrorInfo' in message_json else None, 
+                        pmerrorInfo=message_json['pmerrorInfo'] if 'pmerrorInfo' in message_json else None,
                         vmerrorInfo=message_json['vmerrorInfo'] if 'vmerrorInfo' in message_json else None, )
                 elif message_json['type'] == 'io':
                     if message_json['success']:
@@ -223,7 +220,7 @@ def collect_result(app):
                     else:
                         print 'starts storing io test error information ...'
                         result = IOResult(IP=message_json['IP'], success=message_json['success'], deployTime=message_json['deployTime'],
-                        pmerrorInfo=message_json['pmerrorInfo'] if 'pmerrorInfo' in message_json else None, 
+                        pmerrorInfo=message_json['pmerrorInfo'] if 'pmerrorInfo' in message_json else None,
                         vmerrorInfo=message_json['vmerrorInfo'] if 'vmerrorInfo' in message_json else None, )
                 # store the result
                 try:
