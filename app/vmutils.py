@@ -160,8 +160,8 @@ def prepareTest(app, host, passwd):
 
 def clearhost():
     with settings(warn_only=True):
-        if run("python2.7 daemon.py status").succeeded:
-            with cd("%s" % Config.WORK_DIR):
+        with cd("%s" % Config.WORK_DIR):
+            if run("python2.7 daemon.py status").succeeded:
                 # before umount mfs, must stop all the vms, because vm will use backend image on the mfs
                 if run("python2.7 destroy_all_vms.py").failed:
                     abort("Before unmouting mfs, can't destroy all the vms")
