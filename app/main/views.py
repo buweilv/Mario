@@ -199,7 +199,7 @@ def add_host():
             client = SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             try:
-                client.connect(username="root", password=passwd, hostname=ip)
+                client.connect(username="root", timeout=4, password=passwd, hostname=ip)
                 ad_host = Host(IP=ip, password=passwd, status="managed")
                 db.session.add(ad_host)
                 db.session.commit()
@@ -207,7 +207,8 @@ def add_host():
                 return jsonify({'input_ok': 'invalid hostname'})
             except paramiko.AuthenticationException:
                 return jsonify({'input_ok': 'auth failed'})
-            except paramiko.ssh_exception.NoValidConnectionsError:
+            #except paramiko.ssh_exception.NoValidConnectionsError:
+            except socket.timeout:
                 return jsonify({'input_ok': 'check the machine if ready'})
             except IntegrityError:
                 db.session.rollback()
