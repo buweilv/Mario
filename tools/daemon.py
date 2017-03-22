@@ -126,7 +126,7 @@ def pm_test(type, pm_ip, deploy_time, pm_logname, connection):
                 'IP': pm_ip,
                 'success': False,
                 'deployTime': deploy_time,
-                'pmerrorInfo': errorInfo
+                'pmerrorInfo': errorinfo
             }
             result_str = json.dumps(result_json)
             recv_num = connection.publish("%s:RESULT" % pm_ip, result_str)
@@ -407,7 +407,7 @@ if __name__ == '__main__':
     parser.add_argument("operation", help="[start|stop|status] the daemon")
     parser.add_argument("--ip", help="the IP addr server exposed to Mario app")
     # read mario ip from appconfig
-    with open(appconfig, 'r') as f:
+    with open("appconfig", 'r') as f:
         mario_ip = f.read()
     print "App server is: ", mario_ip
     parser.add_argument("-mip","--marioip", help="the IP addr of Mario app", default=mario_ip)

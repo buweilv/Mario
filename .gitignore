@@ -4,3 +4,4 @@ tools/*.gz
 tools/*.xz
 tools/*.tar
 *.swp
+start.sh
