@@ -15,6 +15,7 @@ import json
 workdir = Config.WORK_DIR
 mountdir = Config.MFS_MOUNT_POINT
 mfsmaster = Config.MFS_MASTER
+mario_ip = Config.MARIO_IP
 # host = "10.214.144.181"
 env.user = "root"
 #env.password = "root"
@@ -85,6 +86,8 @@ def prepareVM(host):
                 abort("Failed to mount mfs filesystem")
             # after mounting moosefs, copy necessary files to workdir
             with cd(workdir):
+                # generate app server config
+                run("echo  %s > appconfig" % mario_ip)
                 if run("cp %s ." % daemonpy).failed:
                     abort("Failed to copy daemon.py")
                 if run("cp %s ." % destroyvmpy).failed:
