@@ -406,7 +406,11 @@ if __name__ == '__main__':
 
     parser.add_argument("operation", help="[start|stop|status] the daemon")
     parser.add_argument("--ip", help="the IP addr server exposed to Mario app")
-    parser.add_argument("-mip","--marioip", help="the IP addr of Mario app", default="10.214.16.200")
+    # read mario ip from appconfig
+    with open(appconfig, 'r') as f:
+        mario_ip = f.read()
+    print "App server is: ", mario_ip
+    parser.add_argument("-mip","--marioip", help="the IP addr of Mario app", default=mario_ip)
     args = parser.parse_args()
 
     if args.operation == 'start':
