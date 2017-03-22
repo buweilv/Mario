@@ -8,7 +8,7 @@ import uuid
 import random
 import os
 
-parser = argparse.ArgumentParser(usage='./%(prog)s(python %(prog)s) [options]',
+parser = argparse.ArgumentParser(usage='./%(prog)s(python2.7 %(prog)s) [options]',
                                  description="""
                                  This script is used to define the specified vm template to an available domain.
                                  You don't have to specify uuid, domain name and mac address, every time you use

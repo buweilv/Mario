@@ -362,7 +362,8 @@ def main():
     paramiko.util.log_to_file("/var/log/mario/paramiko.log")
     # Get CPU and memory info
     cpu_cores = int(sp.check_output("cat /proc/cpuinfo | grep 'processor' | wc -l ", shell=True))
-    mem =  int(float(sp.check_output("free -mh | grep Mem | awk '{print $2}'", shell=True).strip('G\n')))
+    #mem =  int(float(sp.check_output("free -mh | grep Mem | awk '{print $2}'", shell=True).strip('G\n')))
+    mem =  int(float(sp.check_output("free -mg | grep Mem | awk '{print $2}'", shell=True)))
     conn = redis.StrictRedis(host=args.marioip, port=6379, db=5)
     # ignore subscribe/unsubscribe confirmation messages
     p = conn.pubsub(ignore_subscribe_messages=True)
@@ -396,7 +397,7 @@ def main():
 if __name__ == '__main__':
     PIDFILE = '/tmp/mariodaemon.pid'
 
-    parser = argparse.ArgumentParser(usage='./%(prog)s(python %(prog)s) [start|stop] [options]',
+    parser = argparse.ArgumentParser(usage='./%(prog)s(python2.7 %(prog)s) [start|stop] [options]',
                                 description="""
                                 This daemon is used to listen test events from Mario app, at the very begining,
                                 you start daemon with the IP address which is the server exposed to the Mario app.

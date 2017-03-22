@@ -90,20 +90,20 @@ def prepareVM(host):
                 if run("cp %s ." % destroyvmpy).failed:
                     abort("Failed to copy destroy_all_vms.py")
                 # check if redis-py installed
-                if run("python -c 'import redis'").failed:
+                if run("python2.7 -c 'import redis'").failed:
                     if run("cp %s ." % redistar).failed:
                         abort("Failed to copy redis-2.10.5.tar.gz")
                         # decompress and install redis-py
                     if run("tar -xvf redis-2.10.5.tar.gz").failed:
                         abort("Failed to decompress redis-py")
                     with cd("redis-2.10.5"):
-                        if run("python setup.py install").failed:
+                        if run("python2.7 setup.py install").failed:
                             abort("Failed to install redis-py")
-                # check if paramiko installed, paramiko must be installed manaually, because its environment is very complex(python2.6 install may differs from python2.7)
-                if run("python -c 'import paramiko'").failed:
+                # check if paramiko installed, paramiko must be installed manaually, because its environment is very complex(python2.72.6 install may differs from python2.72.7)
+                if run("python2.7 -c 'import paramiko'").failed:
                     abort("Test Server must be installed paramiko!")
                 # After install redis-py and paramiko, daenon just run
-                if run("python daemon.py start --ip %s" %host).failed:
+                if run("python2.7 daemon.py start --ip %s" %host).failed:
                     abort("Falied to start daemon process")
                 # check if sysbench exists
                 if run("sysbench --version").failed:
@@ -162,7 +162,7 @@ def clearhost():
     with settings(warn_only=True):
         with cd(workdir):
             # before umount mfs, must stop all the vms, because vm will use backend image on the mfs
-            if run("python destroy_all_vms.py").failed:
+            if run("python2.7 destroy_all_vms.py").failed:
                 abort("Before unmouting mfs, can't destroy all the vms")
         with cd("/"):
             if run("df -Th | grep %s" % Config.MFS_MASTER).succeeded:
@@ -171,8 +171,8 @@ def clearhost():
             if run("test -d %s" % Config.WORK_DIR).succeeded:
                 # stop daemon
                 with cd("%s" % Config.WORK_DIR):
-                    if run("python daemon.py status").succeeded:
-                        run("python daemon.py stop")
+                    if run("python2.7 daemon.py status").succeeded:
+                        run("python2.7 daemon.py stop")
                 with cd("/"):
                     if run("rm -rf %s" % Config.WORK_DIR).failed:
                         abort("Failed to remove %s" % Config.WORK_DIR)
@@ -284,7 +284,7 @@ def defineVM(vmnum=1, existvmnum=0, **vmpara):
             while i < vmnum:
                 if run("qemu-img create -f qcow2 -b %s %s-%d.qcow2" % (baseimg, vmtype, existvmnum + i)).succeeded:
                     if run("cp %s %s-%d.xml " % (basexml, vmtype, existvmnum + i)).succeeded:
-                        if run("python domaindefine.py %s-%d.xml %s-%d.qcow2" % (
+                        if run("python2.7 domaindefine.py %s-%d.xml %s-%d.qcow2" % (
                         vmtype, existvmnum + i, vmtype, existvmnum + i)).succeeded:
                             i += 1
                         else:
