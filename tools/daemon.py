@@ -63,8 +63,12 @@ def daemonize(pidfile,    stdin='/dev/null',
 
     signal.signal(signal.SIGTERM, sigterm_handler)
 
+   
 def get_ip_from_mac(mac):
-	return sp.check_output("virsh net-dhcp-leases default %(mac)s | grep %(mac)s | awk '{print $5}'" % {'mac': mac}, shell=True).strip()[:-3]
+    if not sp.call("grep -q -i 'release 7' /etc/redhat-release", shell=True):
+        return sp.check_output("virsh net-dhcp-leases default %(mac)s | grep %(mac)s | awk '{print $5}'" % {'mac': mac}, shell=True).strip()[:-3]
+    if not sp.call("grep -q -i 'release 6' /etc/redhat-release", shell=True):
+        return sp.check_output("grep %(mac)s /var/lib/libvirt/dnsmasq/default.leases | awk '{print $3}'" % {'mac': mac}, shell=True).strip()
 
 def connect_vm(vm_ip):
     ssh = paramiko.SSHClient()
@@ -82,7 +86,10 @@ def generate_config(type, mem, cpu_cores):
            random.randint(0x00, 0xff) ]
     mac_addr = ':'.join(map(lambda x: "%02x" % x, mac))
     sp.call("qemu-img create -f qcow2 -b /mnt/mfs/sl6-bk.img /var/lib/libvirt/images/vm-%(type)s.qcow2" % {'type': type}, shell=True)
-    tree = ET.ElementTree(file="/mnt/mfs/base.xml")
+    if not sp.call("grep -q -i 'release 7' /etc/redhat-release", shell=True):
+        tree = ET.ElementTree(file="/mnt/mfs/base_rhel7.xml")
+    if not sp.call("grep -q -i 'release 6' /etc/redhat-release", shell=True):
+        tree = ET.ElementTree(file="/mnt/mfs/base_rhel6.xml")
     tree.find('name').text = "%(type)s-vm" % {'type': type}
     tree.find('memory').text = str(mem / 2)
     tree.find('currentMemory').text = str(mem / 2)
@@ -330,6 +337,7 @@ def virtualization_test(type, deploy_time, connection, IP, cpu_cores, mem):
         mac_addr = generate_config(type, mem, cpu_cores)
         vm_ip = get_vm_ip(type, IP, mac_addr, deploy_time, connection)
         if vm_ip:
+            print "vm ip is %s" % vm_ip
             return vm_test(type, vm_ip, IP, deploy_time, vm_logname, connection) and get_result(type, IP, deploy_time, pm_logname, vm_logname, connection)
         else:
             print "get vm ip failed!"
