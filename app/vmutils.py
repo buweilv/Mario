@@ -22,6 +22,8 @@ env.user = "root"
 baseimg = mountdir + "centos7-bk.img"
 basexml = mountdir + "host-base.xml"
 redistar = mountdir + "redis-2.10.5.tar.gz"
+m4tar = mountdir + "m4-1.4.18.tar.gz" 
+autoconftar = mountdir + "autoconf-2.69.tar.gz" 
 sysbenchtar = mountdir + "sysbench-1.0.1.tar.gz"
 iozonetar = mountdir + "iozone3_465.tar"
 streamtar = mountdir + "stream.tar"
@@ -105,11 +107,26 @@ def prepareVM(host):
                 # check if paramiko installed, paramiko must be installed manaually, because its environment is very complex(python2.72.6 install may differs from python2.72.7)
                 if run("python2.7 -c 'import paramiko'").failed:
                     abort("Test Server must be installed paramiko!")
-                # After install redis-py and paramiko, daenon just run
-                if run("python2.7 daemon.py start --ip %s" %host).failed:
-                    abort("Falied to start daemon process")
                 # check if sysbench exists
-                if run("sysbench --version").failed:
+                if run("/usr/local/src/sysbench-1.0.1/src/sysbench --version").failed:
+                    #if run("grep -q -i 'release 6' /etc/redhat-release").succeeded:
+                    if run("cp %s /usr/local/src/ " % autoconftar).failed:
+                        abort("Failed to copy autoconf-2.69.tar.gz")
+                    if run("cp %s /usr/local/src/ " % m4tar).failed:
+                        abort("Failed to copy m4-1.4.18.tar.gz")
+                    with cd("/usr/local/src"):
+                        if run("tar -xvf autoconf-2.69.tar.gz && tar -xvf m4-1.4.18.tar.gz").failed:
+                            abort("Failed to decomprss autoconf-2.69.tar.gz or m4-1.4.18.tar.gz")
+                        with cd("m4-1.4.18"):
+                            if run("./configure && make && make install").failed:
+                                abort("Failed to intsall m4")
+                        with cd("autoconf-2.69"):
+                            if run("./configure --prefix=/usr").failed:
+                                abort("Failed to configure autoconf")
+                            if run("make -j 4").failed:
+                                abort("Failed to make autoconf")
+                            if run("make install").failed:
+                                abort("Failed to make install autoconf")
                     if run("cp %s /usr/local/src/" % sysbenchtar).failed:
                         abort("Failed to copy sysbench-1.0.1.tar.gz")
                     with cd("/usr/local/src/"):
@@ -141,6 +158,9 @@ def prepareVM(host):
                 with cd("/usr/local/src/"):
                     if run("tar -xvf stream.tar").failed:
                         abort("Failed to decompress stream.tar")
+                # At last,  daenon just run
+                if run("python2.7 daemon.py start --ip %s" %host).failed:
+                    abort("Falied to start daemon process")
             return True
 
 
