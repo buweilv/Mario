@@ -86,10 +86,12 @@ def del_results():
     return jsonify({'ok': True})
     
 
-@main.route('/_cpu_test',methods=['POST'])
-def cpu_test():
-    print request.form.items() # debug info: print the cpu test hosts
+@main.route('/_virtualization_test',methods=['POST'])
+def virtualization_test():
+    print request.form.items() # debug info: print the test type and test hosts
     status_dict = {}
+    test_type = request.form.items().pop()[1]
+    print 'test type is: ', test_type
     """
     status:
     'more than one' (listening)
@@ -103,7 +105,7 @@ def cpu_test():
         now = datetime.datetime.now()
         deploytime = now.strftime("%Y-%m-%d-%H%M%S")
         deploy_json = {
-            'type': 'cpu',
+            'type': test_type,
             'time': deploytime
         }
         deploy_str = json.dumps(deploy_json)

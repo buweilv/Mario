@@ -5,3 +5,5 @@ tools/*.xz
 tools/*.tar
 *.swp
 start.sh
+*.sqlite
+migrations/
