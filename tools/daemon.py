@@ -82,7 +82,10 @@ def generate_config(type, mem, cpu_cores):
            random.randint(0x00, 0xff) ]
     mac_addr = ':'.join(map(lambda x: "%02x" % x, mac))
     sp.call("qemu-img create -f qcow2 -b /mnt/mfs/sl6-bk.img /var/lib/libvirt/images/vm-%(type)s.qcow2" % {'type': type}, shell=True)
-    tree = ET.ElementTree(file="/mnt/mfs/base.xml")
+    if not sp.call("grep -q -i 'release 7' /etc/redhat-release", shell=True):
+        tree = ET.ElementTree(file="/mnt/mfs/base_rhel7.xml")
+    if not sp.call("grep -q -i 'release 6' /etc/redhat-release", shell=True):
+        tree = ET.ElementTree(file="/mnt/mfs/base_rhel6.xml")
     tree.find('name').text = "%(type)s-vm" % {'type': type}
     tree.find('memory').text = str(mem / 2)
     tree.find('currentMemory').text = str(mem / 2)
