@@ -89,8 +89,16 @@ def del_results():
 @main.route('/_virtualization_test',methods=['POST'])
 def virtualization_test():
     print request.form.items() # debug info: print the test type and test hosts
+    test_info = request.form.items()
     status_dict = {}
-    test_type = request.form.items().pop()[1]
+    #search where is the type
+    id = 0
+    for item in test_info:
+        if item[0] != 'type':
+            id += 1
+        else:
+            break
+    test_type = test_info.pop(id)[1]
     print 'test type is: ', test_type
     """
     status:
@@ -98,7 +106,7 @@ def virtualization_test():
     'no one' (listening)
     'success' (just one client listening)
     """
-    for item in request.form.items():
+    for item in test_info:
         print "item is", item
         test_host = Host.query.filter_by(id=item[1]).first().IP
         # generate deploy time, and send deploy info
@@ -106,72 +114,6 @@ def virtualization_test():
         deploytime = now.strftime("%Y-%m-%d-%H%M%S")
         deploy_json = {
             'type': test_type,
-            'time': deploytime
-        }
-        deploy_str = json.dumps(deploy_json)
-        recv_num = conn.publish(test_host, deploy_str)
-        if recv_num > 1:
-            status_dict[test_host] = 'more than one'
-            # return jsonify({'deploy_ok': 'more than one', 'IP': test_host})
-        elif recv_num == 0:
-            status_dict[test_host] = 'no one'
-            # return jsonify({'deploy_ok': 'no server accept', 'IP': test_host})
-        else:
-            status_dict[test_host] = 'success'
-    return jsonify(status_dict)
-
-
-@main.route('/_mem_test',methods=['POST'])
-def mem_test():
-    print request.form.items() # debug info: print the cpu test hosts
-    status_dict = {}
-    """
-    status:
-    'more than one' (listening)
-    'no one' (listening)
-    'success' (just one client listening)
-    """
-    for item in request.form.items():
-        print "item is", item
-        test_host = Host.query.filter_by(id=item[1]).first().IP
-        # generate deploy time, and send deploy info
-        now = datetime.datetime.now()
-        deploytime = now.strftime("%Y-%m-%d-%H%M%S")
-        deploy_json = {
-            'type': 'mem',
-            'time': deploytime
-        }
-        deploy_str = json.dumps(deploy_json)
-        recv_num = conn.publish(test_host, deploy_str)
-        if recv_num > 1:
-            status_dict[test_host] = 'more than one'
-            # return jsonify({'deploy_ok': 'more than one', 'IP': test_host})
-        elif recv_num == 0:
-            status_dict[test_host] = 'no one'
-            # return jsonify({'deploy_ok': 'no server accept', 'IP': test_host})
-        else:
-            status_dict[test_host] = 'success'
-    return jsonify(status_dict)
-
-
-@main.route('/_io_test',methods=['POST'])
-def io_test():
-    print request.form.items() # debug info: print the cpu test hosts
-    status_dict = {}
-    """
-    status:
-    'more than one' (listening)
-    'no one' (listening)
-    'success' (just one client listening)
-    """
-    for item in request.form.items():
-        print "item is", item
-        test_host = Host.query.filter_by(id=item[1]).first().IP
-        # generate deploy time, and send deploy info
-        now = datetime.datetime.now()
-        deploytime = now.strftime("%Y-%m-%d-%H%M%S")
-        deploy_json = {
-            'type': 'io',
             'time': deploytime
         }
         deploy_str = json.dumps(deploy_json)

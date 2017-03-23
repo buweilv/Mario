@@ -140,7 +140,13 @@ $(document).ready(function(){
         var test_type = $(this).attr('name')
         console.log('Thest type is ' + test_type)
 
-       
+        $(form).append(
+            $('<input>')
+                .attr('type', 'hidden')
+                .attr('name', 'type')
+                .val(test_type)
+        );
+
         //Iterate over all selected checkboxes
         $('tr.selected').each(function(index) {
         // create a hidden element
@@ -155,15 +161,8 @@ $(document).ready(function(){
          ips_arr.push($(this).children('td[name=ip]').text());
         });
         // end of function each
-        
-         // The last input is type
-        $(form).append(
-            $('<input')
-                .attr('type', 'hidden')
-                .attr('name', 'type')
-                .val(test_type)
-        );
 
+        
         // check the rows_arr get right rowIds
         /*
         console.log('rows_arr len: ' + rows_arr.length + ' Elements: ');
