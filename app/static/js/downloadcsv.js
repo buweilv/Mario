@@ -20,6 +20,7 @@ $(document).ready(function(){
 
 
 	$('tbody tr').each(function(index){
+        if (!$(this).find("td:eq(0)").hasClass("dataTables_empty")) {
 		if ($(this).find("td:eq(2)").text() === "cpu") {
             id = parseInt($(this).attr('id').substring(4));
             generate_download_btn("cpu", id, $(this).children("td:last-child"));      
@@ -34,5 +35,6 @@ $(document).ready(function(){
             }
         else
             alert("wrong type when draw download button in the table!")
+            }
 	})
 })
